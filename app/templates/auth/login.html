@@ -236,7 +236,7 @@
 
 
     <div class="login-container">
-        <img src="{{ url_for('static', filename='logo-farma.png') }}" alt="Logo de CuidaMas" class="login-logo">
+        <img src="{{ url_for('static', filename='logo-farma.png') }}" alt="Logo" class="login-logo">
         
         <div class="login-title">Iniciar Sesión</div>
         
@@ -246,9 +246,9 @@
             </div>
             <div class="input-group">
                 <input type="password" name="password" class="form-control" placeholder="Contraseña" required id="password-input">
-                <button type="button" id="toggle-password" 
-                    aria-label="Mostrar Contraseña"
-                    style="position:absolute; right:10px; top:50%; transform:translateY(-50%);
+                
+                                <button type="button" id="toggle-password" 
+                    aria-label="Mostrar Contraseña"                     style="position:absolute; right:10px; top:50%; transform:translateY(-50%);
                            background:none; border:none; color:#6a89cc; font-size:1.2rem; cursor:pointer;">
                     <i class="fa-regular fa-eye" id="eye-icon"></i>
                 </button>
@@ -292,10 +292,7 @@
                 toggleBtn.addEventListener('click', function() {
                     var isVisible = pwdInput.type === 'text';
                     pwdInput.type = isVisible ? 'password' : 'text';
-                    
-                    // CORRECCIÓN ADICIONAL: Actualizar el aria-label al cambiar el ícono.
                     eyeIcon.className = isVisible ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
-                    toggleBtn.setAttribute('aria-label', isVisible ? 'Ocultar Contraseña' : 'Mostrar Contraseña');
                 });
             }
 
@@ -562,4 +559,4 @@
         });
     </script>
 </body>
-</html>
+</html> busca ese boton y corrige esas lineas
