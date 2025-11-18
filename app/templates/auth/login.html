@@ -1,561 +1,565 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión - CuidaMas</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <style>
-        /* --- ESTILOS GENERALES Y DE FONDO --- */
-        body {
-            background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 40%, #fbc2eb 70%, #fcd6e6 100%);
-            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-            min-height: 100vh;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - CuidaMas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        /* --- ESTILOS GENERALES Y DE FONDO --- */
+        body {
+            background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 40%, #fbc2eb 70%, #fcd6e6 100%);
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
 
-        /* --- BARRA DE NAVEGACIÓN SUPERIOR --- */
-        #neon-navbar {
-            width: 100vw; position: fixed; top: 0; left: 0; z-index: 200;
-            box-shadow: 0 0 40px 10px #fbc2eb55, 0 0 0 4px #a1c4fd;
-            border-bottom: 2px solid #a1c4fd;
-            background: rgba(255,255,255,0.97);
-            padding: 1.5rem 0;
-            display: flex; justify-content: center; align-items: center;
-            backdrop-filter: blur(2px);
-        }
-        .navbar-content {
-            display: flex; align-items: center; gap: 2.5rem; font-size: 2.5rem;
-        }
-        .navbar-title {
-            font-size: 2.7rem; color: #a1c4fd;
-            text-shadow: 0 0 18px #fbc2eb, 0 0 32px #c2e9fb99;
-            font-weight: bold; letter-spacing: 2px;
-        }
-        .navbar-emoji { animation: emojiMove 3s infinite ease-in-out; }
+        /* --- BARRA DE NAVEGACIÓN SUPERIOR --- */
+        #neon-navbar {
+            width: 100vw; position: fixed; top: 0; left: 0; z-index: 200;
+            box-shadow: 0 0 40px 10px #fbc2eb55, 0 0 0 4px #a1c4fd;
+            border-bottom: 2px solid #a1c4fd;
+            background: rgba(255,255,255,0.97);
+            padding: 1.5rem 0;
+            display: flex; justify-content: center; align-items: center;
+            backdrop-filter: blur(2px);
+        }
+        .navbar-content {
+            display: flex; align-items: center; gap: 2.5rem; font-size: 2.5rem;
+        }
+        .navbar-title {
+            font-size: 2.7rem; color: #a1c4fd;
+            text-shadow: 0 0 18px #fbc2eb, 0 0 32px #c2e9fb99;
+            font-weight: bold; letter-spacing: 2px;
+        }
+        .navbar-emoji { animation: emojiMove 3s infinite ease-in-out; }
 
-        /* --- CONTENEDOR DEL LOGIN --- */
-        .login-container {
-            background: rgba(255,255,255,0.97);
-            border-radius: 20px;
-            box-shadow: 0 0 32px 8px #a1c4fd55, 0 0 0 2px #fbc2eb;
-            padding: 8rem 2rem 2.5rem 2rem; 
-            max-width: 350px;
-            width: 100%;
-            margin: 10rem auto 2rem auto;
-            position: relative;
-            display: flex; flex-direction: column; align-items: center;
-            animation: fadeInUp 1.2s cubic-bezier(.68,-0.55,.27,1.55);
-            backdrop-filter: blur(2px);
-        }
-        .login-container::before {
-            content: '';
-            position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px;
-            border-radius: 24px; z-index: -1;
-            background: linear-gradient(90deg, #a1c4fd, #c2e9fb, #fbc2eb, #fcd6e6, #a1c4fd);
-            background-size: 300% 300%;
-            filter: blur(10px); opacity: 0.6;
-            animation: neonBorder 6s linear infinite;
-        }
-        
-        /* --- ESTILOS DEL LOGO --- */
-        .login-logo {
-            width: 150px;
-            height: 150px;
-            object-fit: contain;
-            box-sizing: border-box;
-            position: absolute;
-            top: 1.5rem;
-            left: 50%;
-            transform: translateX(-50%); 
-            border: none;
-            filter: 
-                drop-shadow(0 0 22px #fbc2eb)
-                drop-shadow(0 0 14px #a1c4fd);
-            transition: all 0.3s ease;
-            z-index: 10; 
-        }
+        /* --- CONTENEDOR DEL LOGIN --- */
+        .login-container {
+            background: rgba(255,255,255,0.97);
+            border-radius: 20px;
+            box-shadow: 0 0 32px 8px #a1c4fd55, 0 0 0 2px #fbc2eb;
+            padding: 8rem 2rem 2.5rem 2rem; 
+            max-width: 350px;
+            width: 100%;
+            margin: 10rem auto 2rem auto;
+            position: relative;
+            display: flex; flex-direction: column; align-items: center;
+            animation: fadeInUp 1.2s cubic-bezier(.68,-0.55,.27,1.55);
+            backdrop-filter: blur(2px);
+        }
+        .login-container::before {
+            content: '';
+            position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px;
+            border-radius: 24px; z-index: -1;
+            background: linear-gradient(90deg, #a1c4fd, #c2e9fb, #fbc2eb, #fcd6e6, #a1c4fd);
+            background-size: 300% 300%;
+            filter: blur(10px); opacity: 0.6;
+            animation: neonBorder 6s linear infinite;
+        }
+        
+        /* --- ESTILOS DEL LOGO --- */
+        .login-logo {
+            width: 150px;
+            height: 150px;
+            object-fit: contain;
+            box-sizing: border-box;
+            position: absolute;
+            top: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%); 
+            border: none;
+            filter: 
+                drop-shadow(0 0 22px #fbc2eb)
+                drop-shadow(0 0 14px #a1c4fd);
+            transition: all 0.3s ease;
+            z-index: 10; 
+        }
 
-        .login-title {
-            color: #6a89cc;
-            text-shadow: 0 2px 12px #fbc2eb, 0 0 18px #c2e9fb;
-            font-size: 2rem; text-align: center;
-            margin-top: 0;
-            margin-bottom: 1.5rem; 
-            letter-spacing: 2px; font-weight: 600;
-        }
+        .login-title {
+            color: #6a89cc;
+            text-shadow: 0 2px 12px #fbc2eb, 0 0 18px #c2e9fb;
+            font-size: 2rem; text-align: center;
+            margin-top: 0;
+            margin-bottom: 1.5rem; 
+            letter-spacing: 2px; font-weight: 600;
+        }
 
-        /* --- FORMULARIO --- */
-        .input-group {
-            width: 100%; position: relative;
-            margin-bottom: 1.2rem;
-        }
-        .form-control {
-            width: 100%; box-sizing: border-box;
-            background: #fcd6e6;
-            border: 2px solid #a1c4fd;
-            border-radius: 8px; color: #222;
-            padding: 0.8rem 1rem; font-size: 1rem;
-        }
-        .form-control:focus {
-            border: 2px solid #6a89cc;
-            outline: none; box-shadow: 0 0 20px #fbc2eb;
-            background: #c2e9fb;
-        }
-        .btn-login {
-            background: linear-gradient(90deg, #a1c4fd 0%, #fbc2eb 100%);
-            color: #fff; border: none; border-radius: 8px;
-            padding: 0.8rem 1.5rem; font-size: 1.1rem; font-weight: bold;
-            box-shadow: 0 0 20px #a1c4fd;
-            cursor: pointer; width: 100%;
-            letter-spacing: 1px; margin-top: 0.5rem;
-        }
+        /* --- FORMULARIO --- */
+        .input-group {
+            width: 100%; position: relative;
+            margin-bottom: 1.2rem;
+        }
+        .form-control {
+            width: 100%; box-sizing: border-box;
+            background: #fcd6e6;
+            border: 2px solid #a1c4fd;
+            border-radius: 8px; color: #222;
+            padding: 0.8rem 1rem; font-size: 1rem;
+        }
+        .form-control:focus {
+            border: 2px solid #6a89cc;
+            outline: none; box-shadow: 0 0 20px #fbc2eb;
+            background: #c2e9fb;
+        }
+        .btn-login {
+            background: linear-gradient(90deg, #a1c4fd 0%, #fbc2eb 100%);
+            color: #fff; border: none; border-radius: 8px;
+            padding: 0.8rem 1.5rem; font-size: 1.1rem; font-weight: bold;
+            box-shadow: 0 0 20px #a1c4fd;
+            cursor: pointer; width: 100%;
+            letter-spacing: 1px; margin-top: 0.5rem;
+        }
 
-        /* --- MODAL DE ERROR --- */
-        .error-modal {
-            display: none;
-            position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(20,30,48,0.55);
-            z-index: 999;
-            align-items: center; 
-            justify-content: center;
-        }
-        .modal-content {
-            background: rgba(255,255,255,0.97);
-            border-radius: 16px;
-            box-shadow: 0 0 32px 8px #a1c4fd55, 0 0 0 2px #fbc2eb;
-            padding: 1.5rem;
-            max-width: 320px;
-            width: 90%;
-            text-align: center;
-            backdrop-filter: blur(2px);
-            animation: fadeInUp 0.5s;
-        }
-        .modal-icon { font-size: 2rem; color: #ff3860; margin-bottom: 0.7rem; }
-        .modal-message { color: #5572a1; font-size: 1.05rem; margin-bottom: 1.2rem; }
-        .modal-close-btn { background: none; border: none; color: #6a89cc; font-size: 1.1rem; cursor: pointer; font-weight: bold; }
+        /* --- MODAL DE ERROR --- */
+        .error-modal {
+            display: none;
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(20,30,48,0.55);
+            z-index: 999;
+            align-items: center; 
+            justify-content: center;
+        }
+        .modal-content {
+            background: rgba(255,255,255,0.97);
+            border-radius: 16px;
+            box-shadow: 0 0 32px 8px #a1c4fd55, 0 0 0 2px #fbc2eb;
+            padding: 1.5rem;
+            max-width: 320px;
+            width: 90%;
+            text-align: center;
+            backdrop-filter: blur(2px);
+            animation: fadeInUp 0.5s;
+        }
+        .modal-icon { font-size: 2rem; color: #ff3860; margin-bottom: 0.7rem; }
+        .modal-message { color: #5572a1; font-size: 1.05rem; margin-bottom: 1.2rem; }
+        .modal-close-btn { background: none; border: none; color: #6a89cc; font-size: 1.1rem; cursor: pointer; font-weight: bold; }
 
-        /* --- BOTÓN Y ESTADO DEL ASISTENTE DE VOZ --- */
-        #asistente-btn {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: linear-gradient(135deg, #a1c4fd, #fbc2eb);
-            color: white;
-            border: none;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            font-size: 1.8rem;
-            cursor: pointer;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.25), 0 0 30px #a1c4fd;
-            z-index: 1000;
-            transition: all 0.3s ease;
-        }
-        #asistente-btn:hover { transform: scale(1.1); }
-        #asistente-btn.active {
-            animation: pulse 1.5s infinite;
-        }
-        #asistente-status {
-            position: fixed;
-            bottom: 6rem;
-            right: 2rem;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            z-index: 1000;
-            display: none; /* Oculto por defecto */
-        }
-        
-        /* --- EMOJIS DE FONDO Y ANIMACIONES --- */
-        .emoji-bg span {
-            position: absolute; font-size: 5rem; opacity: 0.35;
-            user-select: none;
-            animation: move 15s ease-in-out infinite alternate;
-        }
-        .emoji-bg span:nth-child(1) { top: 4%; left: 7%; }
-        .emoji-bg span:nth-child(2) { top: 10%; left: 85%; }
-        .emoji-bg span:nth-child(3) { top: 18%; left: 30%; animation-delay: 1s; }
-        .emoji-bg span:nth-child(4) { top: 28%; left: 65%; animation-delay: 2s; }
-        .emoji-bg span:nth-child(5) { top: 38%; left: 12%; animation-delay: 3s; }
-        .emoji-bg span:nth-child(6) { top: 52%; left: 80%; animation-delay: 0.5s; }
-        .emoji-bg span:nth-child(7) { top: 65%; left: 20%; animation-delay: 2.5s; }
-        .emoji-bg span:nth-child(8) { top: 78%; left: 70%; animation-delay: 1.5s; }
-        .emoji-bg span:nth-child(9) { top: 90%; left: 45%; animation-delay: 3.5s; }
+        /* --- BOTÓN Y ESTADO DEL ASISTENTE DE VOZ --- */
+        #asistente-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: linear-gradient(135deg, #a1c4fd, #fbc2eb);
+            color: white;
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 1.8rem;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25), 0 0 30px #a1c4fd;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        #asistente-btn:hover { transform: scale(1.1); }
+        #asistente-btn.active {
+            animation: pulse 1.5s infinite;
+        }
+        #asistente-status {
+            position: fixed;
+            bottom: 6rem;
+            right: 2rem;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            z-index: 1000;
+            display: none; /* Oculto por defecto */
+        }
+        
+        /* --- EMOJIS DE FONDO Y ANIMACIONES --- */
+        .emoji-bg span {
+            position: absolute; font-size: 5rem; opacity: 0.35;
+            user-select: none;
+            animation: move 15s ease-in-out infinite alternate;
+        }
+        .emoji-bg span:nth-child(1) { top: 4%; left: 7%; }
+        .emoji-bg span:nth-child(2) { top: 10%; left: 85%; }
+        .emoji-bg span:nth-child(3) { top: 18%; left: 30%; animation-delay: 1s; }
+        .emoji-bg span:nth-child(4) { top: 28%; left: 65%; animation-delay: 2s; }
+        .emoji-bg span:nth-child(5) { top: 38%; left: 12%; animation-delay: 3s; }
+        .emoji-bg span:nth-child(6) { top: 52%; left: 80%; animation-delay: 0.5s; }
+        .emoji-bg span:nth-child(7) { top: 65%; left: 20%; animation-delay: 2.5s; }
+        .emoji-bg span:nth-child(8) { top: 78%; left: 70%; animation-delay: 1.5s; }
+        .emoji-bg span:nth-child(9) { top: 90%; left: 45%; animation-delay: 3.5s; }
 
 
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes neonBorder { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-        @keyframes emojiMove { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-12px) scale(1.1);} }
-        @keyframes move {
-            from { transform: translateY(0) rotate(0deg); }
-            to { transform: translateY(20px) rotate(15deg); }
-        }
-        @keyframes pulse {
-            0% { box-shadow: 0 4px 20px rgba(0,0,0,0.25), 0 0 30px #fbc2eb; }
-            50% { box-shadow: 0 6px 30px rgba(0,0,0,0.3), 0 0 40px #a1c4fd; }
-            100% { box-shadow: 0 4px 20px rgba(0,0,0,0.25), 0 0 30px #fbc2eb; }
-        }
-    </style>
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes neonBorder { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+        @keyframes emojiMove { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-12px) scale(1.1);} }
+        @keyframes move {
+            from { transform: translateY(0) rotate(0deg); }
+            to { transform: translateY(20px) rotate(15deg); }
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 4px 20px rgba(0,0,0,0.25), 0 0 30px #fbc2eb; }
+            50% { box-shadow: 0 6px 30px rgba(0,0,0,0.3), 0 0 40px #a1c4fd; }
+            100% { box-shadow: 0 4px 20px rgba(0,0,0,0.25), 0 0 30px #fbc2eb; }
+        }
+    </style>
 </head>
 <body>
-    <nav id="neon-navbar">
-        <div class="navbar-content">
-            <span class="navbar-emoji" id="btn-dashboard" title="Panel">💊</span>
-            <span class="navbar-emoji" id="btn-inventory" title="Inventario">🩺</span>
-            <span class="navbar-title">CuidaMas</span>
-            <span class="navbar-emoji" id="btn-patients" title="Pacientes">🧑‍⚕️</span>
-            <span class="navbar-emoji" id="btn-prescriptions" title="Recetas">🏪</span>
-        </div>
-    </nav>
-    
-    <div id="error-modal" class="error-modal">
-        <div class="modal-content">
-            <span class="modal-icon">⚠️</span>
-            <div id="error-message" class="modal-message"></div>
-            <button id="close-error-modal" class="modal-close-btn">Cerrar</button>
-        </div>
-    </div>
+    <nav id="neon-navbar">
+        <div class="navbar-content">
+            <span class="navbar-emoji" id="btn-dashboard" title="Panel">💊</span>
+            <span class="navbar-emoji" id="btn-inventory" title="Inventario">🩺</span>
+            <span class="navbar-title">CuidaMas</span>
+            <span class="navbar-emoji" id="btn-patients" title="Pacientes">🧑‍⚕️</span>
+            <span class="navbar-emoji" id="btn-prescriptions" title="Recetas">🏪</span>
+        </div>
+    </nav>
+    
+    <div id="error-modal" class="error-modal">
+        <div class="modal-content">
+            <span class="modal-icon">⚠️</span>
+            <div id="error-message" class="modal-message"></div>
+            <button id="close-error-modal" class="modal-close-btn">Cerrar</button>
+        </div>
+    </div>
 
-    <div class="emoji-bg">
-        <span>💊</span> <span>🩺</span> <span>🧬</span> <span>🩹</span>
-        <span>🧪</span> <span>🏥</span> <span>🌡️</span> <span>💉</span> <span>🔬</span>
-    </div>
+    <div class="emoji-bg">
+        <span>💊</span> <span>🩺</span> <span>🧬</span> <span>🩹</span>
+        <span>🧪</span> <span>🏥</span> <span>🌡️</span> <span>💉</span> <span>🔬</span>
+    </div>
 
-    <button type="button" id="asistente-btn" title="Activar Asistente de Voz">
-        <i class="fa-solid fa-microphone"></i>
-    </button>
-    <div id="asistente-status">Escuchando...</div>
+    <button type="button" id="asistente-btn" title="Activar Asistente de Voz">
+        <i class="fa-solid fa-microphone"></i>
+    </button>
+    <div id="asistente-status">Escuchando...</div>
 
 
-    <div class="login-container">
-        <img src="{{ url_for('static', filename='logo-farma.png') }}" alt="Logo" class="login-logo">
-        
-        <div class="login-title">Iniciar Sesión</div>
-        
-        <form method="POST" action="{{ url_for('auth.login') }}" id="login-form">
-            <div class="input-group">
-                <input type="email" name="email" class="form-control" placeholder="Correo electrónico" required id="email-input">
-            </div>
-            <div class="input-group">
-                <input type="password" name="password" class="form-control" placeholder="Contraseña" required id="password-input">
-                <button type="button" id="toggle-password"
-                    style="position:absolute; right:10px; top:50%; transform:translateY(-50%);
-                           background:none; border:none; color:#6a89cc; font-size:1.2rem; cursor:pointer;">
-                    <i class="fa-regular fa-eye" id="eye-icon"></i>
-                </button>
-            </div>
-            <button type="submit" class="btn-login">Entrar</button>
-        </form>
-    </div>
+    <div class="login-container">
+        <img src="{{ url_for('static', filename='logo-farma.png') }}" alt="Logo de CuidaMas" class="login-logo">
+        
+        <div class="login-title">Iniciar Sesión</div>
+        
+        <form method="POST" action="{{ url_for('auth.login') }}" id="login-form">
+            <div class="input-group">
+                <input type="email" name="email" class="form-control" placeholder="Correo electrónico" required id="email-input">
+            </div>
+            <div class="input-group">
+                <input type="password" name="password" class="form-control" placeholder="Contraseña" required id="password-input">
+                <button type="button" id="toggle-password" 
+                    aria-label="Mostrar Contraseña"
+                    style="position:absolute; right:10px; top:50%; transform:translateY(-50%);
+                           background:none; border:none; color:#6a89cc; font-size:1.2rem; cursor:pointer;">
+                    <i class="fa-regular fa-eye" id="eye-icon"></i>
+                </button>
+            </div>
+            <button type="submit" class="btn-login">Entrar</button>
+        </form>
+    </div>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <script>
-          document.addEventListener('DOMContentLoaded', function() {
-            var modal = document.getElementById('error-modal');
-            var msgDiv = document.getElementById('error-message');
-            {% for category, message in messages %}
-              {% if category == 'danger' or category == 'warning' %}
-                msgDiv.innerText = "Error: Correo o contraseña incorrecta";
-                modal.style.display = 'flex';
-              {% endif %}
-            {% endfor %}
-          });
-        </script>
-      {% endif %}
-    {% endwith %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <script>
+          document.addEventListener('DOMContentLoaded', function() {
+            var modal = document.getElementById('error-modal');
+            var msgDiv = document.getElementById('error-message');
+            {% for category, message in messages %}
+              {% if category == 'danger' or category == 'warning' %}
+                msgDiv.innerText = "Error: Correo o contraseña incorrecta";
+                modal.style.display = 'flex';
+              {% endif %}
+            {% endfor %}
+          });
+        </script>
+      {% endif %}
+    {% endwith %}
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // --- LÓGICA DE LOGIN EXISTENTE ---
-            var modal = document.getElementById('error-modal');
-            var closeBtn = document.getElementById('close-error-modal');
-            if (modal && closeBtn) {
-                closeBtn.onclick = function() {
-                  modal.style.display = 'none';
-                };
-            }
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- LÓGICA DE LOGIN EXISTENTE ---
+            var modal = document.getElementById('error-modal');
+            var closeBtn = document.getElementById('close-error-modal');
+            if (modal && closeBtn) {
+                closeBtn.onclick = function() {
+                  modal.style.display = 'none';
+                };
+            }
 
-            var toggleBtn = document.getElementById('toggle-password');
-            var pwdInput = document.getElementById('password-input');
-            var eyeIcon = document.getElementById('eye-icon');
-            if (toggleBtn && pwdInput) {
-                toggleBtn.addEventListener('click', function() {
-                    var isVisible = pwdInput.type === 'text';
-                    pwdInput.type = isVisible ? 'password' : 'text';
-                    eyeIcon.className = isVisible ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
-                });
-            }
+            var toggleBtn = document.getElementById('toggle-password');
+            var pwdInput = document.getElementById('password-input');
+            var eyeIcon = document.getElementById('eye-icon');
+            if (toggleBtn && pwdInput) {
+                toggleBtn.addEventListener('click', function() {
+                    var isVisible = pwdInput.type === 'text';
+                    pwdInput.type = isVisible ? 'password' : 'text';
+                    
+                    // CORRECCIÓN ADICIONAL: Actualizar el aria-label al cambiar el ícono.
+                    eyeIcon.className = isVisible ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+                    toggleBtn.setAttribute('aria-label', isVisible ? 'Ocultar Contraseña' : 'Mostrar Contraseña');
+                });
+            }
 
-            // --- LÓGICA DE NAVEGACIÓN EXISTENTE ---
-            document.getElementById('btn-dashboard')?.addEventListener('click', function() {
-                window.location.href = "{{ url_for('pharmacist.dashboard') }}";
-            });
-            document.getElementById('btn-inventory')?.addEventListener('click', function() {
-                window.location.href = "{{ url_for('pharmacist.inventory') }}";
-            });
-            document.getElementById('btn-patients')?.addEventListener('click', function() {
-                window.location.href = "{{ url_for('pharmacist.view_patients') }}";
-            });
-            document.getElementById('btn-prescriptions')?.addEventListener('click', function() {
-                window.location.href = "{{ url_for('pharmacist.view_prescriptions') }}";
-            });
+            // --- LÓGICA DE NAVEGACIÓN EXISTENTE ---
+            document.getElementById('btn-dashboard')?.addEventListener('click', function() {
+                window.location.href = "{{ url_for('pharmacist.dashboard') }}";
+            });
+            document.getElementById('btn-inventory')?.addEventListener('click', function() {
+                window.location.href = "{{ url_for('pharmacist.inventory') }}";
+            });
+            document.getElementById('btn-patients')?.addEventListener('click', function() {
+                window.location.href = "{{ url_for('pharmacist.view_patients') }}";
+            });
+            document.getElementById('btn-prescriptions')?.addEventListener('click', function() {
+                window.location.href = "{{ url_for('pharmacist.view_prescriptions') }}";
+            });
 
-            // --- ASISTENTE DE VOZ (CONTINUO + TEMPORIZADOR) ---
+            // --- ASISTENTE DE VOZ (CONTINUO + TEMPORIZADOR) ---
 
-            var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            var wakeWordRecognition; 
-            var sharedRecognition;
-            var audioCtx = window.AudioContext ? new window.AudioContext() : null;
+            var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            var wakeWordRecognition; 
+            var sharedRecognition;
+            var audioCtx = window.AudioContext ? new window.AudioContext() : null;
 
-            var asistenteBtn = document.getElementById('asistente-btn');
-            var statusDiv = document.getElementById('asistente-status');
-            var emailInput = document.getElementById('email-input');
-            var pwdInput = document.getElementById('password-input');
-            var loginForm = document.getElementById('login-form');
-            
-            var isListeningForWakeWord = false;
-            let speechTimeout = null;
-            let currentTranscript = "";
+            var asistenteBtn = document.getElementById('asistente-btn');
+            var statusDiv = document.getElementById('asistente-status');
+            var emailInput = document.getElementById('email-input');
+            var pwdInput = document.getElementById('password-input');
+            var loginForm = document.getElementById('login-form');
+            
+            var isListeningForWakeWord = false;
+            let speechTimeout = null;
+            let currentTranscript = "";
 
-            // Función de Beep (para el tiempo)
-            function playBeep(callback) {
-                if (!audioCtx) {
-                    if (callback) callback();
-                    return;
-                }
-                var oscillator = audioCtx.createOscillator();
-                var gainNode = audioCtx.createGain();
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                oscillator.type = 'sine';
-                oscillator.frequency.value = 880;
-                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-                gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.01);
-                oscillator.start(audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
-                oscillator.stop(audioCtx.currentTime + 0.1);
-                oscillator.onended = () => {
-                    if (callback) callback();
-                };
-            }
+            // Función de Beep (para el tiempo)
+            function playBeep(callback) {
+                if (!audioCtx) {
+                    if (callback) callback();
+                    return;
+                }
+                var oscillator = audioCtx.createOscillator();
+                var gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 880;
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.01);
+                oscillator.start(audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
+                oscillator.stop(audioCtx.currentTime + 0.1);
+                oscillator.onended = () => {
+                    if (callback) callback();
+                };
+            }
 
-            // Función para que el asistente hable
-            function speak(text, callback) {
-                try { sharedRecognition.stop(); } catch(e) {}
-                
-                if ('speechSynthesis' in window) {
-                    var utter = new SpeechSynthesisUtterance(text);
-                    utter.lang = 'es-ES';
-                    utter.onend = function() {
-                        playBeep(callback);
-                    };
-                    window.speechSynthesis.speak(utter);
-                } else {
-                    playBeep(callback);
-                }
-            }
-            
-            // Procesador para el CORREO (Números y Símbolos)
-            function processTranscript(transcript) {
-                if (!transcript) return "";
-                let processed = transcript.toLowerCase();
-                
-                // Símbolos (sin \b para que funcione si están pegados)
-                processed = processed.replace(/guion bajo/g, '_');
-                processed = processed.replace(/arroba/g, '@');
-                processed = processed.replace(/punto/g, '.');
-                processed = processed.replace(/guion/g, '-');
-                processed = processed.replace(/gato/g, '#');
-                processed = processed.replace(/numeral/g, '#');
-                
-                // Números (sin \b)
-                processed = processed.replace(/cero/g, '0');
-                processed = processed.replace(/uno/g, '1');
-                processed = processed.replace(/dos/g, '2');
-                processed = processed.replace(/tres/g, '3');
-                processed = processed.replace(/cuatro/g, '4');
-                processed = processed.replace(/cinco/g, '5');
-                processed = processed.replace(/seis/g, '6');
-                processed = processed.replace(/siete/g, '7');
-                processed = processed.replace(/ocho/g, '8');
-                processed = processed.replace(/nueve/g, '9');
-                
-                return processed;
-            }
+            // Función para que el asistente hable
+            function speak(text, callback) {
+                try { sharedRecognition.stop(); } catch(e) {}
+                
+                if ('speechSynthesis' in window) {
+                    var utter = new SpeechSynthesisUtterance(text);
+                    utter.lang = 'es-ES';
+                    utter.onend = function() {
+                        playBeep(callback);
+                    };
+                    window.speechSynthesis.speak(utter);
+                } else {
+                    playBeep(callback);
+                }
+            }
+            
+            // Procesador para el CORREO (Números y Símbolos)
+            function processTranscript(transcript) {
+                if (!transcript) return "";
+                let processed = transcript.toLowerCase();
+                
+                // Símbolos (sin \b para que funcione si están pegados)
+                processed = processed.replace(/guion bajo/g, '_');
+                processed = processed.replace(/arroba/g, '@');
+                processed = processed.replace(/punto/g, '.');
+                processed = processed.replace(/guion/g, '-');
+                processed = processed.replace(/gato/g, '#');
+                processed = processed.replace(/numeral/g, '#');
+                
+                // Números (sin \b)
+                processed = processed.replace(/cero/g, '0');
+                processed = processed.replace(/uno/g, '1');
+                processed = processed.replace(/dos/g, '2');
+                processed = processed.replace(/tres/g, '3');
+                processed = processed.replace(/cuatro/g, '4');
+                processed = processed.replace(/cinco/g, '5');
+                processed = processed.replace(/seis/g, '6');
+                processed = processed.replace(/siete/g, '7');
+                processed = processed.replace(/ocho/g, '8');
+                processed = processed.replace(/nueve/g, '9');
+                
+                return processed;
+            }
 
-            // 1. Iniciar/Detener la escucha de la palabra clave
-            if (asistenteBtn && SpeechRecognition) {
-                
-                wakeWordRecognition = new SpeechRecognition();
-                wakeWordRecognition.lang = 'es-ES';
-                wakeWordRecognition.continuous = true;
-                wakeWordRecognition.interimResults = false;
+            // 1. Iniciar/Detener la escucha de la palabra clave
+            if (asistenteBtn && SpeechRecognition) {
+                
+                wakeWordRecognition = new SpeechRecognition();
+                wakeWordRecognition.lang = 'es-ES';
+                wakeWordRecognition.continuous = true;
+                wakeWordRecognition.interimResults = false;
 
-                asistenteBtn.onclick = function() {
-                    if (audioCtx && audioCtx.state === 'suspended') {
-                        audioCtx.resume();
-                    }
-                    
-                    if (isListeningForWakeWord) {
-                        wakeWordRecognition.stop();
-                        isListeningForWakeWord = false;
-                        asistenteBtn.classList.remove('active');
-                        statusDiv.style.display = 'none';
-                    } else {
-                        try {
-                            wakeWordRecognition.start();
-                            isListeningForWakeWord = true;
-                            asistenteBtn.classList.add('active');
-                            statusDiv.innerHTML = "Di 'Oye CuidaMas'";
-                            statusDiv.style.display = 'block';
-                        } catch (e) {
-                            console.error("Error al iniciar reconocimiento:", e);
-                            statusDiv.innerHTML = "Error de micrófono";
-                        }
-                    }
-                };
-                
-                wakeWordRecognition.onresult = function(event) {
-                    for (var i = event.resultIndex; i < event.results.length; ++i) {
-                        var transcript = event.results[i][0].transcript.trim().toLowerCase();
-                        if (transcript.includes("oye cuida más") || transcript.includes("hola cuida más")) {
-                            wakeWordRecognition.stop();
-                            isListeningForWakeWord = false;
-                            asistenteBtn.classList.remove('active');
-                            startLoginSequence();
-                        }
-                    }
-                };
+                asistenteBtn.onclick = function() {
+                    if (audioCtx && audioCtx.state === 'suspended') {
+                        audioCtx.resume();
+                    }
+                    
+                    if (isListeningForWakeWord) {
+                        wakeWordRecognition.stop();
+                        isListeningForWakeWord = false;
+                        asistenteBtn.classList.remove('active');
+                        statusDiv.style.display = 'none';
+                    } else {
+                        try {
+                            wakeWordRecognition.start();
+                            isListeningForWakeWord = true;
+                            asistenteBtn.classList.add('active');
+                            statusDiv.innerHTML = "Di 'Oye CuidaMas'";
+                            statusDiv.style.display = 'block';
+                        } catch (e) {
+                            console.error("Error al iniciar reconocimiento:", e);
+                            statusDiv.innerHTML = "Error de micrófono";
+                        }
+                    }
+                };
+                
+                wakeWordRecognition.onresult = function(event) {
+                    for (var i = event.resultIndex; i < event.results.length; ++i) {
+                        var transcript = event.results[i][0].transcript.trim().toLowerCase();
+                        if (transcript.includes("oye cuida más") || transcript.includes("hola cuida más")) {
+                            wakeWordRecognition.stop();
+                            isListeningForWakeWord = false;
+                            asistenteBtn.classList.remove('active');
+                            startLoginSequence();
+                        }
+                    }
+                };
 
-                wakeWordRecognition.onend = function() {
-                    if (isListeningForWakeWord) {
-                        try { wakeWordRecognition.start(); } catch(e) {}
-                    }
-                };
+                wakeWordRecognition.onend = function() {
+                    if (isListeningForWakeWord) {
+                        try { wakeWordRecognition.start(); } catch(e) {}
+                    }
+                };
 
-                // Pre-inicializar el objeto compartido
-                sharedRecognition = new SpeechRecognition();
-                sharedRecognition.lang = 'es-ES';
-                sharedRecognition.continuous = true;
-                sharedRecognition.interimResults = true; 
+                // Pre-inicializar el objeto compartido
+                sharedRecognition = new SpeechRecognition();
+                sharedRecognition.lang = 'es-ES';
+                sharedRecognition.continuous = true;
+                sharedRecognition.interimResults = true; 
 
-            } else if (asistenteBtn) {
-                asistenteBtn.style.display = 'none'; // Ocultar si no hay soporte
-            }
+            } else if (asistenteBtn) {
+                asistenteBtn.style.display = 'none'; // Ocultar si no hay soporte
+            }
 
-            // 3. Secuencia de Login
-            function startLoginSequence() {
-                statusDiv.innerHTML = "¡Hola! Di tu correo.";
-                statusDiv.style.display = 'block';
-                speak("¡Hola! Soy el asistente de CuidaMas. Por favor, di tu correo electrónico.", listenForEmail);
-            }
-            
-            function listenForEmail() {
-                statusDiv.innerHTML = "Escuchando correo...";
-                statusDiv.style.display = 'block';
-                currentTranscript = "";
+            // 3. Secuencia de Login
+            function startLoginSequence() {
+                statusDiv.innerHTML = "¡Hola! Di tu correo.";
+                statusDiv.style.display = 'block';
+                speak("¡Hola! Soy el asistente de CuidaMas. Por favor, di tu correo electrónico.", listenForEmail);
+            }
+            
+            function listenForEmail() {
+                statusDiv.innerHTML = "Escuchando correo...";
+                statusDiv.style.display = 'block';
+                currentTranscript = "";
 
-                sharedRecognition.onresult = function(event) {
-                    clearTimeout(speechTimeout);
-                    let interimTranscript = "";
-                    let finalTranscript = "";
+                sharedRecognition.onresult = function(event) {
+                    clearTimeout(speechTimeout);
+                    let interimTranscript = "";
+                    let finalTranscript = "";
 
-                    for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        let transcript = event.results[i][0].transcript;
-                        if (event.results[i].isFinal) {
-                            finalTranscript += transcript.trim();
-                        } else {
-                            interimTranscript += transcript;
-                        }
-                    }
-                    
-                    currentTranscript = finalTranscript || currentTranscript;
-                    
-                    // LÓGICA DE CORREO: Procesar símbolos + Quitar espacios
-                    emailInput.value = processTranscript(interimTranscript || currentTranscript).replace(/\s+/g, '');
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        let transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript.trim();
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+                    
+                    currentTranscript = finalTranscript || currentTranscript;
+                    
+                    // LÓGICA DE CORREO: Procesar símbolos + Quitar espacios
+                    emailInput.value = processTranscript(interimTranscript || currentTranscript).replace(/\s+/g, '');
 
-                    // Temporizador estándar para el correo
-                    speechTimeout = setTimeout(() => {
-                        console.log("Fin de habla detectado (Email).");
-                        sharedRecognition.stop();
-                        emailInput.value = processTranscript(currentTranscript).replace(/\s+/g, '');
-                        statusDiv.innerHTML = "Escuchando contraseña...";
-                        speak("Correo registrado. Ahora, di tu contraseña.", listenForPassword);
-                    }, 1500); // 1.5 segundos de silencio
-                };
-                
-                sharedRecognition.onerror = function(event) {
-                     if (event.error !== 'no-speech' && event.error !== 'aborted') {
-                        speak("No te entendí. Por favor, activa el asistente de nuevo.", () => statusDiv.style.display = 'none');
-                    }
-                };
+                    // Temporizador estándar para el correo
+                    speechTimeout = setTimeout(() => {
+                        console.log("Fin de habla detectado (Email).");
+                        sharedRecognition.stop();
+                        emailInput.value = processTranscript(currentTranscript).replace(/\s+/g, '');
+                        statusDiv.innerHTML = "Escuchando contraseña...";
+                        speak("Correo registrado. Ahora, di tu contraseña.", listenForPassword);
+                    }, 1500); // 1.5 segundos de silencio
+                };
+                
+                sharedRecognition.onerror = function(event) {
+                     if (event.error !== 'no-speech' && event.error !== 'aborted') {
+                        speak("No te entendí. Por favor, activa el asistente de nuevo.", () => statusDiv.style.display = 'none');
+                    }
+                };
 
-                try {
-                    sharedRecognition.start();
-                } catch(e) {
-                    console.error("Error al iniciar escucha de email:", e);
-                }
-            }
+                try {
+                    sharedRecognition.start();
+                } catch(e) {
+                    console.error("Error al iniciar escucha de email:", e);
+                }
+            }
 
-            function listenForPassword() {
-                statusDiv.innerHTML = "Escuchando contraseña...";
-                statusDiv.style.display = 'block';
-                currentTranscript = "";
+            function listenForPassword() {
+                statusDiv.innerHTML = "Escuchando contraseña...";
+                statusDiv.style.display = 'block';
+                currentTranscript = "";
 
-                sharedRecognition.onresult = function(event) {
-                    clearTimeout(speechTimeout);
-                    let interimTranscript = "";
-                    let finalTranscript = "";
+                sharedRecognition.onresult = function(event) {
+                    clearTimeout(speechTimeout);
+                    let interimTranscript = "";
+                    let finalTranscript = "";
 
-                    for (let i = event.resultIndex; i < event.results.length; ++i) {
-                        let transcript = event.results[i][0].transcript;
-                        if (event.results[i].isFinal) {
-                            finalTranscript += transcript.trim();
-                        } else {
-                            interimTranscript += transcript;
-                        }
-                    }
-                    
-                    currentTranscript = finalTranscript || currentTranscript;
-                    
-                    // LÓGICA DE CONTRASEÑA: Literal + Quitar espacios
-                    pwdInput.value = (interimTranscript || currentTranscript).replace(/\s+/g, '');
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        let transcript = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            finalTranscript += transcript.trim();
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+                    
+                    currentTranscript = finalTranscript || currentTranscript;
+                    
+                    // LÓGICA DE CONTRASEÑA: Literal + Quitar espacios
+                    pwdInput.value = (interimTranscript || currentTranscript).replace(/\s+/g, '');
 
-                    // --- ¡CAMBIO CLAVE! Temporizador más largo para la contraseña ---
-                    speechTimeout = setTimeout(() => {
-                        console.log("Fin de habla detectado (Pass).");
-                        sharedRecognition.stop();
-                        pwdInput.value = currentTranscript.replace(/\s+/g, '');
-                        statusDiv.innerHTML = "Iniciando sesión...";
-                        speak("Perfecto. Iniciando sesión.", function() {
-                            statusDiv.style.display = 'none';
-                            loginForm.submit();
-                        });
-                    }, 3000); // 3 segundos de silencio
-                };
+                    // --- ¡CAMBIO CLAVE! Temporizador más largo para la contraseña ---
+                    speechTimeout = setTimeout(() => {
+                        console.log("Fin de habla detectado (Pass).");
+                        sharedRecognition.stop();
+                        pwdInput.value = currentTranscript.replace(/\s+/g, '');
+                        statusDiv.innerHTML = "Iniciando sesión...";
+                        speak("Perfecto. Iniciando sesión.", function() {
+                            statusDiv.style.display = 'none';
+                            loginForm.submit();
+                        });
+                    }, 3000); // 3 segundos de silencio
+                };
 
-                sharedRecognition.onerror = function(event) {
-                     if (event.error !== 'no-speech' && event.error !== 'aborted') {
-                        speak("No te entendí la contraseña. Por favor, activa el asistente de nuevo.", () => statusDiv.style.display = 'none');
-                    }
-                };
+                sharedRecognition.onerror = function(event) {
+                     if (event.error !== 'no-speech' && event.error !== 'aborted') {
+                        speak("No te entendí la contraseña. Por favor, activa el asistente de nuevo.", () => statusDiv.style.display = 'none');
+                    }
+                };
 
-                try {
-                    sharedRecognition.start();
-                } catch(e) {
-                    console.error("Error al iniciar escucha de pass:", e);
-                }
-            }
-        });
-    </script>
+                try {
+                    sharedRecognition.start();
+                } catch(e) {
+                    console.error("Error al iniciar escucha de pass:", e);
+                }
+            }
+        });
+    </script>
 </body>
 </html>
