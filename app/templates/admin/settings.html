@@ -1,0 +1,31 @@
+{% extends 'layout/base.html' %}
+{% block title %}Configuración del Sistema{% endblock %}
+{% block content %}
+    <header class="header"><h1><i class="fas fa-cog"></i> Configuración</h1></header>
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">Configuración de Usuario</div>
+                <div class="card-body">
+                    <!-- ¡ESTE FORMULARIO YA ES FUNCIONAL! -->
+                    <form action="{{ url_for('admin.update_settings_profile') }}" method="POST">
+                        <div class="mb-3"><label class="form-label">Nombre Completo</label><input type="text" class="form-control" name="nombre_completo" value="{{ g.profile.nombre_completo }}"></div>
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- ... (resto del archivo se queda igual) ... -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header">Mantenimiento</div>
+                <div class="card-body">
+                    <!-- ¡ESTOS BOTONES YA SON FUNCIONALES! -->
+                    <a href="{{ url_for('admin.create_backup') }}" class="btn btn-secondary mb-3">Crear Respaldo</a>
+                    <hr>
+                    <a href="{{ url_for('admin.check_for_updates') }}" class="btn btn-info text-white">Buscar Actualizaciones</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

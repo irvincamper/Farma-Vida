@@ -1,0 +1,51 @@
+{% extends 'layout/base.html' %}
+{% block title %}Panel del Farmacéutico{% endblock %}
+
+{% block content %}
+<header class="header">
+    <h1><i class="fas fa-pills"></i> Panel del Farmacéutico</h1>
+    <p>Resumen general del estado del inventario y suministros.</p>
+</header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-capsules fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Medicamentos Diferentes</h5>
+                <p class="card-text fs-2 fw-bold">{{ stats.medicines_count }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-box fa-3x text-info mb-3"></i>
+                <h5 class="card-title">Suministros Diferentes</h5>
+                <p class="card-text fs-2 fw-bold">{{ stats.supplies_count }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                <h5 class="card-title">Items con Bajo Stock</h5>
+                <p class="card-text fs-2 fw-bold">{{ stats.low_stock_count }}</p>
+                <small class="text-muted">(Menos de 10 unidades)</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Puedes añadir más secciones aquí en el futuro, como "Últimos Movimientos" o "Pedidos Pendientes" -->
+
+{% endblock %}

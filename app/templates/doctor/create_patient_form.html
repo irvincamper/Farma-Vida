@@ -1,0 +1,78 @@
+{% extends 'layout/base.html' %}
+{% block title %}Registrar Nuevo Paciente{% endblock %}
+
+{% block content %}
+    <header class="header">
+        <h1><i class="fas fa-user-plus"></i> Registrar Nuevo Paciente</h1>
+        <p>Cree una nueva ficha de paciente y su cuenta de usuario en el sistema.</p>
+    </header>
+
+    <div class="card">
+        <div class="card-body">
+            <form action="{{ url_for('doctor.create_patient') }}" method="POST">
+                
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <h5>Datos de Identificación</h5>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="nombre_completo" class="form-label">Nombre Completo</label>
+                        <input type="text" id="nombre_completo" name="nombre_completo" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="curp" class="form-label">CURP</label>
+                        <input type="text" id="curp" name="curp" class="form-control" 
+                               placeholder="18 caracteres alfanuméricos" 
+                               maxlength="18" minlength="18" required
+                               style="text-transform:uppercase"
+                               onkeyup="this.value = this.value.toUpperCase();">
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="email" class="form-label">Correo Electrónico</label>
+                        <input type="email" id="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
+                        <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" class="form-control">
+                    </div>
+                </div>
+
+                <h5 class="mt-4">Credenciales de Acceso</h5>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="password" class="form-label">Crear Contraseña</label>
+                        <input type="password" id="password" name="password" class="form-control" required minlength="8">
+                        <small class="form-text text-muted">Mínimo 8 caracteres.</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="confirm_password" class="form-label">Confirmar Contraseña</label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-control" required minlength="8">
+                    </div>
+                </div>
+
+                <h5 class="mt-4">Información Adicional (Opcional)</h5>
+                <hr>
+                <div class="mb-3">
+                    <label for="info_contacto" class="form-label">Teléfono u otro contacto</label>
+                    <textarea id="info_contacto" name="info_contacto" class="form-control" rows="3"></textarea>
+                </div>
+                
+                <div class="d-flex justify-content-end mt-4">
+                    <a href="{{ url_for('doctor.patients') }}" class="btn btn-secondary me-2">Cancelar</a>
+                    <button type="submit" class="btn btn-primary">Crear Paciente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

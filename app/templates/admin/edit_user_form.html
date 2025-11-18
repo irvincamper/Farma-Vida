@@ -1,0 +1,52 @@
+{% extends 'layout/base.html' %}
+{% block title %}Editar Usuario{% endblock %}
+
+{% block content %}
+    <header class="header">
+        <h1><i class="fas fa-user-edit"></i> Editar Usuario: {{ user.nombre_completo }}</h1>
+    </header>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="nombre_completo" class="form-label">Nombre Completo</label>
+                    <input type="text" id="nombre_completo" name="nombre_completo" class="form-control" value="{{ user.nombre_completo }}">
+                </div>
+                <div class="mb-3">
+                    <label for="id_de_rol" class="form-label">Rol</label>
+                    <select id="id_de_rol" name="id_de_rol" class="form-select">
+                        <!-- Asumiendo que tienes una lista de roles disponible o la hardcodeas -->
+                        <option value="1" {% if user.roles.id == 1 %}selected{% endif %}>Administrador</option>
+                        <option value="2" {% if user.roles.id == 2 %}selected{% endif %}>Doctor</option>
+                        <option value="3" {% if user.roles.id == 3 %}selected{% endif %}>Paciente</option>
+                        <option value="4" {% if user.roles.id == 4 %}selected{% endif %}>Farmacéutico</option>
+                    </select>
+                </div>
+                <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- --- SECCIÓN NUEVA AÑADIDA --- -->
+    <div class="card mt-4 border-danger">
+        <div class="card-header bg-danger text-white">
+            <h5><i class="fas fa-exclamation-triangle"></i> Zona de Peligro</h5>
+        </div>
+        <div class="card-body">
+            <p>Esta acción eliminará permanentemente al usuario del sistema de autenticación y su perfil. No se puede deshacer.</p>
+            
+            <!-- Formulario de Eliminación con confirmación -->
+            <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" 
+                  onsubmit="return confirm('¿Estás absolutamente seguro de que quieres eliminar a este usuario? Esta acción es irreversible.');">
+                
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash-alt me-2"></i>Eliminar Usuario Permanentemente
+                </button>
+            </form>
+        </div>
+    </div>
+    <!-- --- FIN DE LA SECCIÓN NUEVA --- -->
+
+{% endblock %}

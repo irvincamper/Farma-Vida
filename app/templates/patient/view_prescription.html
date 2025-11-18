@@ -1,0 +1,28 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Ver Receta{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2"><i class="fas fa-receipt me-2"></i> Detalle de la Receta</h1>
+        <a href="{{ url_for('patient.profile') }}" class="btn btn-outline-secondary">Volver a Mi Perfil</a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            Receta #12345 - emitida el 2025-08-02
+        </div>
+        <div class="card-body">
+            <p><strong>Doctor:</strong> Dr. Jorge Neri Trejo</p>
+            <hr>
+            <h5>Medicamentos:</h5>
+            <ul>
+                <li><strong>Paracetamol 500mg:</strong> Tomar 1 tableta cada 8 horas por 3 días.</li>
+                <li><strong>Amoxicilina 250mg:</strong> Tomar 1 cápsula cada 12 horas por 7 días.</li>
+            </ul>
+        </div>
+        <div class="card-footer text-end">
+            <button class="btn btn-primary"><i class="fas fa-print me-2"></i> Imprimir Receta</button>
+        </div>
+    </div>
+{% endblock %}

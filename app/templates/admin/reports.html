@@ -1,0 +1,156 @@
+{% extends 'layout/base.html' %}
+{% block title %}Reportes Analíticos{% endblock %}
+{% block content %}
+    <!-- Tu contenido HTML se queda igual, no necesitamos el div 'printable-area' para este método -->
+    <header class="header">
+        <h1><i class="fas fa-chart-line"></i> Reportes Analíticos</h1>
+        <p>Visualice los datos clave del sistema a través de gráficas interactivas.</p>
+    </header>
+
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card h-100">
+                <div class="card-header">Ventas por Mes (Ejemplo)</div>
+                <div class="card-body">
+                    <canvas id="salesChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header">Distribución de Roles</div>
+                <div class="card-body">
+                    <canvas id="rolesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">Generar Reporte</div>
+        <div class="card-body text-center">
+            <p>Descargue una versión en PDF de los reportes mostrados arriba.</p>
+            <!-- El ID del botón se cambia para el nuevo script -->
+            <button type="button" class="btn btn-primary btn-lg" id="generateReportBtn">
+                <i class="fas fa-file-pdf me-2"></i>Generar y Descargar PDF
+            </button>
+        </div>
+    </div>
+{% endblock %}
+
+
+{% block scripts %}
+    <!-- Se mantiene Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- ¡NUEVO! Se añade la librería jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- Ya no necesitamos ni html2pdf.js ni pdf_generator.js -->
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hacemos las instancias de las gráficas accesibles
+            let salesChartInstance, rolesChartInstance;
+
+            // --- Configuración de la Gráfica de Ventas (Tu código original) ---
+            const salesCtx = document.getElementById('salesChart');
+            if (salesCtx) {
+                salesChartInstance = new Chart(salesCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio'],
+                        datasets: [{
+                            label: 'Ventas ($)',
+                            data: [1250, 1980, 1300, 2500, 2200, 3000],
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: true,
+                        animation: {
+                            duration: 0 
+                        }
+                    }
+                });
+            }
+
+            // --- Configuración de la Gráfica de Roles (Tu código original) ---
+            const rolesCtx = document.getElementById('rolesChart');
+            if (rolesCtx) {
+                rolesChartInstance = new Chart(rolesCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Doctores', 'Pacientes', 'Admins', 'Farmacéuticos'],
+                        datasets: [{
+                            data: [4, 150, 1, 1], 
+                            backgroundColor: ['#36A2EB', '#4BC0C0', '#FF6384', '#FFCE56'],
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: true,
+                        animation: {
+                            duration: 0
+                        }
+                    }
+                });
+            }
+
+            // ===================================================================
+            // === LÓGICA DEFINITIVA PARA EL BOTÓN PDF USANDO jspdf ===
+            // ===================================================================
+            const downloadBtn = document.getElementById('generateReportBtn');
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', function() {
+                    // Preparamos el botón para dar feedback
+                    downloadBtn.disabled = true;
+                    downloadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generando...';
+
+                    try {
+                        const { jsPDF } = window.jspdf;
+                        const doc = new jsPDF('p', 'in', 'letter');
+
+                        // Obtenemos las imágenes de las gráficas en formato PNG de alta calidad
+                        const salesChartImg = salesChartInstance.toBase64Image('image/png', 1.0);
+                        const rolesChartImg = rolesChartInstance.toBase64Image('image/png', 1.0);
+
+                        // --- Dibujamos el PDF ---
+                        // Título y subtítulo
+                        doc.setFontSize(24);
+                        doc.text('Reportes Analíticos', 0.5, 0.8);
+                        doc.setFontSize(12);
+                        doc.text('Farma Vida - Resumen del Sistema', 0.5, 1.1);
+
+                        // Gráfica de Ventas
+                        doc.setFontSize(16);
+                        doc.text('Ventas por Mes (Ejemplo)', 0.5, 1.8);
+                        doc.addImage(salesChartImg, 'PNG', 0.5, 2, 7.5, 3.75); // Posición x, y, ancho, alto
+
+                        // Gráfica de Roles
+                        doc.setFontSize(16);
+                        doc.text('Distribución de Roles', 0.5, 6.5);
+                        doc.addImage(rolesChartImg, 'PNG', 2.25, 6.8, 4, 4); // Más centrada
+
+                        // Guardamos el archivo
+                        doc.save('reporte-farma-vida.pdf');
+
+                    } catch (error) {
+                        console.error("Error al generar el PDF:", error);
+                        alert("Hubo un error inesperado al generar el PDF.");
+                    } finally {
+                        // Reactivamos el botón
+                        downloadBtn.disabled = false;
+                        downloadBtn.innerHTML = '<i class="fas fa-file-pdf me-2"></i>Generar y Descargar PDF';
+                    }
+                });
+            }
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,175 @@
+/* app/static/css/style.css - TEMA AZUL MODERNO CON ANIMACIONES */
+
+/* --- Paleta de Colores y Variables --- */
+:root {
+    --primary-color: #3B82F6;   /* Un azul vibrante y moderno */
+    --primary-dark: #1E40AF;   /* Un azul oscuro para la barra lateral */
+    --background-color: #F3F4F6; /* Fondo gris extra claro */
+    --sidebar-bg: #111827;      /* Barra lateral casi negra para un alto contraste */
+    --sidebar-text: #9CA3AF;    /* Texto gris suave en la barra lateral */
+    --sidebar-text-hover: #FFFFFF;
+    --card-bg: #FFFFFF;
+    --text-color: #1F2937;      /* Texto principal gris oscuro */
+    --border-color: #E5E7EB;
+    --shadow-color: rgba(17, 24, 39, 0.05); /* Sombra muy sutil */
+    --transition-speed: 0.3s;
+}
+
+/* --- Estilos Generales --- */
+body {
+    background-color: var(--background-color);
+    /* ¡NUEVA FUENTE DE LETRA! */
+    font-family: 'Inter', sans-serif;
+    color: var(--text-color);
+    margin: 0;
+}
+
+/* --- Estructura del Layout --- */
+.page-wrapper {
+    display: flex;
+}
+
+.main-content {
+    flex-grow: 1;
+    margin-left: 250px;
+    padding: 2.5rem; /* Más espaciado */
+}
+
+/* --- Barra Lateral (Sidebar) con Transiciones --- */
+.sidebar {
+    width: 250px;
+    background-color: var(--sidebar-bg);
+    position: fixed;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 0;
+    box-shadow: 0.5rem 0 1rem rgba(0,0,0,0.1);
+    transition: width var(--transition-speed) ease;
+}
+
+.sidebar-header {
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-logo {
+    height: 36px;
+    margin-right: 1rem;
+    transition: transform var(--transition-speed) ease;
+}
+.sidebar:hover .sidebar-logo {
+    transform: rotate(360deg);
+}
+
+.sidebar-title {
+    color: #fff;
+    font-size: 1.25rem;
+    margin: 0;
+    font-weight: 600;
+}
+
+.sidebar-menu {
+    list-style: none;
+    padding: 1rem;
+    margin: 0;
+    flex-grow: 1;
+}
+
+.sidebar-menu a {
+    display: flex;
+    align-items: center;
+    padding: 0.8rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 8px; /* Bordes redondeados */
+    color: var(--sidebar-text);
+    text-decoration: none;
+    transition: all var(--transition-speed) ease;
+}
+
+.sidebar-menu a:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--sidebar-text-hover);
+    transform: translateX(5px);
+}
+
+.sidebar-menu a.active {
+    background-color: var(--primary-color);
+    color: #fff;
+    font-weight: 500;
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+}
+
+.sidebar-menu a i {
+    width: 20px;
+    margin-right: 1rem;
+    font-size: 1.1rem;
+}
+
+.sidebar-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* --- Tarjetas (Cards) con Animación --- */
+.card {
+    border: none; /* Sin bordes */
+    border-radius: 12px; /* Bordes más redondeados */
+    box-shadow: 0 4px 12px var(--shadow-color);
+    margin-bottom: 1.5rem;
+    /* ¡ANIMACIÓN AÑADIDA! */
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.card-header {
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+}
+
+/* --- Encabezado de Página --- */
+.header {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+/* --- Página de Login Animada --- */
+body.login-page .page-wrapper {
+    display: block;
+}
+body.login-page .main-content {
+    margin-left: 0;
+    padding: 0;
+}
+.login-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: var(--background-color);
+}
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    /* Aplicamos la animación también a la tarjeta de login */
+    animation-delay: 0.2s;
+}
+
+/* --- DEFINICIÓN DE LAS ANIMACIONES --- */
+
+/* Animación para que los elementos aparezcan desde abajo */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

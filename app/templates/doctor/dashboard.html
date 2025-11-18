@@ -1,0 +1,70 @@
+<!-- app/templates/doctor/dashboard.html -->
+{% extends 'layout/base.html' %}
+<!-- INICIO DE LA MODIFICACIÓN: Título corregido -->
+{% block title %}Panel del Doctor{% endblock %}
+<!-- FIN DE LA MODIFICACIÓN -->
+{% block content %}
+    <header class="header">
+        <!-- INICIO DE LA MODIFICACIÓN: Título y Bienvenida corregidos -->
+        <h1><i class="fas fa-user-md"></i> Panel del Doctor</h1>
+        <p>Bienvenido, Dr. {{ g.profile.nombre_completo }}.</p>
+        <!-- FIN DE LA MODIFICACIÓN -->
+    </header>
+
+    <!-- INICIO DE LA MODIFICACIÓN: Fila de Estadísticas corregida para el doctor -->
+    <div class="row">
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card text-white bg-primary h-100">
+                <div class="card-body">
+                    <div class="h1 fw-bold">{{ stats.patients_count }}</div>
+                    <div>Pacientes Asignados</div>
+                </div>
+                <a href="{{ url_for('doctor.patients') }}" class="card-footer d-flex justify-content-between align-items-center text-white">
+                    <span>Ver Detalles</span><i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card text-white bg-success h-100">
+                <div class="card-body">
+                    <div class="h1 fw-bold">{{ stats.prescriptions_count }}</div>
+                    <div>Recetas Emitidas</div>
+                </div>
+                <a href="{{ url_for('doctor.prescriptions') }}" class="card-footer d-flex justify-content-between align-items-center text-white">
+                    <span>Ver Historial</span><i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card text-white bg-info h-100">
+                <div class="card-body">
+                    <div class="h1 fw-bold"><i class="fas fa-pills"></i></div>
+                    <div>Consultar Inventario</div>
+                </div>
+                <a href="{{ url_for('doctor.inventory') }}" class="card-footer d-flex justify-content-between align-items-center text-white">
+                    <span>Buscar</span><i class="fas fa-arrow-circle-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    <!-- FIN DE LA MODIFICACIÓN -->
+
+    <!-- Tabla de Recetas Recientes (tu código original) -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Recetas Recientes (Ejemplo)</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead><tr><th>Paciente</th><th>Medicamento</th><th>Estado</th></tr></thead>
+                    <tbody>
+                        <tr><td>María Rodríguez</td><td>Amoxicilina 500mg</td><td><span class="badge bg-success">Activa</span></td></tr>
+                        <tr><td>Juan Pérez</td><td>Atorvastatina 20mg</td><td><span class="badge bg-success">Activa</span></td></tr>
+                        <tr><td>Laura Martínez</td><td>Omeprazol 40mg</td><td><span class="badge bg-warning text-dark">Pendiente</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

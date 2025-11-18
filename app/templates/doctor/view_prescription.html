@@ -1,0 +1,93 @@
+{% extends 'layout/base.html' %}
+{% block title %}Detalle de Receta #{{ prescription.id }}{% endblock %}
+
+{% block content %}
+<header class="header">
+    <h1><i class="fas fa-file-invoice"></i> Detalle de Receta Médica</h1>
+    <p>Emitida el: {{ prescription.created_at.split('T')[0] }}</p> {# Formateo simple de fecha #}
+</header>
+
+<div class="row">
+    <!-- Columna de Datos del Paciente -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-injured me-2"></i>Datos del Paciente</h5>
+            </div>
+            <div class="card-body">
+                <!-- --- INICIO DE LA CORRECCIÓN --- -->
+                <p><strong>Nombre:</strong> {{ prescription.paciente.nombre_completo }}</p>
+                <p><strong>CURP:</strong> {{ prescription.paciente.curp }}</p>
+                <p><strong>Fecha de Nacimiento:</strong> {{ prescription.paciente.fecha_nacimiento or 'No especificada' }}</p>
+                <!-- --- FIN DE LA CORRECCIÓN --- -->
+                <p><strong>Peso:</strong> {{ prescription.peso_paciente_kg or 'N/A' }} kg</p>
+                <p><strong>Altura:</strong> {{ prescription.altura_paciente_cm or 'N/A' }} cm</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Columna de Datos del Médico -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-md me-2"></i>Datos del Médico</h5>
+            </div>
+            <div class="card-body">
+                <!-- --- INICIO DE LA CORRECCIÓN --- -->
+                <p><strong>Nombre:</strong> {{ prescription.doctor.nombre_completo }}</p>
+                <!-- --- FIN DE LA CORRECCIÓN --- -->
+                <p><strong>Cédula Profesional:</strong> {{ prescription.cedula_profesional }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Card de Tratamiento y Recomendaciones -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5><i class="fas fa-pills me-2"></i>Tratamiento y Recomendaciones</h5>
+    </div>
+    <div class="card-body">
+        <h6><strong>Tratamiento:</strong></h6>
+        <pre class="bg-light p-3 rounded">{{ prescription.tratamiento }}</pre>
+        
+        {% if prescription.recomendaciones %}
+        <h6 class="mt-4"><strong>Recomendaciones Adicionales:</strong></h6>
+        <pre class="bg-light p-3 rounded">{{ prescription.recomendaciones }}</pre>
+        {% endif %}
+    </div>
+</div>
+
+<div class="text-end mt-4">
+    <button onclick="window.print()" class="btn btn-primary"><i class="fas fa-print me-2"></i>Imprimir Receta</button>
+    <a href="{{ url_for('doctor.prescriptions') }}" class="btn btn-secondary">Volver al Historial</a>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    @media print {
+        /* Oculta todo lo que no queremos imprimir */
+        body > .sidebar, 
+        body > .main-content > .header, 
+        body > .main-content > .text-end,
+        .navbar { /* Oculta también la barra de navegación superior */
+            display: none !important;
+        }
+        /* Asegura que el contenido principal ocupe toda la página */
+        body > .main-content {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .card {
+            border: 1px solid #ccc !important;
+            box-shadow: none !important;
+            page-break-inside: avoid;
+        }
+        pre {
+            white-space: pre-wrap; /* Para que el texto largo no se salga del papel */
+        }
+    }
+</style>
+{% endblock %}

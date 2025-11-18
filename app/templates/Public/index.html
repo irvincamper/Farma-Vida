@@ -1,0 +1,33 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Bienvenido a Farma Vida{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+            <div class="col-md-8 text-center">
+                
+                <!-- Icono Principal -->
+                <i class="fas fa-heart-pulse fa-4x text-primary mb-4"></i>
+                
+                <!-- Título y Eslogan -->
+                <h1 class="display-4 fw-bold">Bienvenido a Farma Vida</h1>
+                <p class="lead text-muted mb-4">
+                    La solución integral para la gestión de su consultorio y farmacia.
+                </p>
+                
+                <!-- Línea Divisoria -->
+                <hr class="my-4">
+                
+                <!-- Llamada a la Acción -->
+                <p>Acceda a su panel para empezar a gestionar pacientes, recetas e inventario de forma eficiente.</p>
+                
+                <!-- Botón de Login -->
+                <a class="btn btn-primary btn-lg" href="{{ url_for('auth.login') }}" role="button">
+                    <i class="fas fa-sign-in-alt me-2"></i> Iniciar Sesión
+                </a>
+
+            </div>
+        </div>
+    </div>
+{% endblock %}

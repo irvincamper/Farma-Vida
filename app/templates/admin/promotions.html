@@ -1,0 +1,118 @@
+{% extends 'layout/base.html' %}
+{% block title %}Gestión de Promociones{% endblock %}
+{% block content %}
+<header class="header">
+    <h1><i class="fas fa-percent"></i> Gestión de Promociones</h1>
+    <p>Cree y administre ofertas y descuentos especiales.</p>
+</header>
+
+<div class="card">
+    <div class="card-header">
+        <!-- Tu código original de pestañas - sin cambios -->
+        <ul class="nav nav-tabs card-header-tabs" id="promoTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="active-promo-tab" data-bs-toggle="tab" data-bs-target="#active-promo-panel" type="button">Promociones Activas</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="create-promo-tab" data-bs-toggle="tab" data-bs-target="#create-promo-panel" type="button">Crear Nueva</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="history-promo-tab" data-bs-toggle="tab" data-bs-target="#history-promo-panel" type="button">Historial</button>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body">
+        <div class="tab-content" id="promoTabsContent">
+            
+            <!-- Pestaña de Promociones Activas -->
+            <div class="tab-pane fade show active" id="active-promo-panel" role="tabpanel">
+                <h5>Promociones Vigentes</h5>
+                <div class="list-group">
+                    {% for promo in promotions %}
+                        <!-- --- INICIO DE LA MODIFICACIÓN --- -->
+                        <!-- Usamos el campo 'activa' de la base de datos como la única fuente de verdad -->
+                        {% if promo.activa %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ promo.titulo }}</h6>
+                               <small class="text-muted">Vigencia: {{ promo.fecha_inicio }} - {{ promo.fecha_fin }}</small>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-success me-2">Activa</span>
+                                
+                                <!-- Botón Editar: ahora es un enlace funcional -->
+                                <a href="{{ url_for('admin.edit_promotion', promo_id=promo.id) }}" class="btn btn-sm btn-outline-secondary">Editar</a>
+                                
+                                <!-- Botón Finalizar: ahora es un formulario funcional -->
+                                <form action="{{ url_for('admin.finalize_promotion', promo_id=promo.id) }}" method="POST" class="ms-1" onsubmit="return confirm('¿Estás seguro de que quieres finalizar esta promoción?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Finalizar</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endif %}
+                        <!-- --- FIN DE LA MODIFICACIÓN --- -->
+                    {% else %}
+                        <div class="list-group-item">No hay promociones en la lista.</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Pestaña de Crear Nueva Promoción - Tu código original sin cambios -->
+            <div class="tab-pane fade" id="create-promo-panel" role="tabpanel">
+                <h5>Crear Nueva Promoción</h5>
+                <form action="{{ url_for('admin.add_promotion') }}" method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">Título de la Promoción</label>
+                        <input type="text" name="titulo" class="form-control" placeholder="Ej: Descuento en Solares" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea name="descripcion" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label">Fecha de Inicio</label>
+                            <input type="date" name="fecha_inicio" class="form-control" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Fecha de Fin</label>
+                            <input type="date" name="fecha_fin" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Imagen Promocional</label>
+                        <input type="file" name="image" class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Publicar Promoción</button>
+                </form>
+            </div>
+
+            <!-- Pestaña de Historial -->
+            <div class="tab-pane fade" id="history-promo-panel" role="tabpanel">
+                <h5>Historial de Promociones</h5>
+                <div class="list-group">
+                    {% for promo in promotions %}
+                        <!-- --- INICIO DE LA MODIFICACIÓN --- -->
+                        <!-- Se muestra en historial si la promoción NO está activa -->
+                        {% if not promo.activa %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ promo.titulo }}</h6>
+                               <small class="text-muted">Vigencia: {{ promo.fecha_inicio }} - {{ promo.fecha_fin }}</small>
+                            </div>
+                            <div>
+                                <span class="badge bg-secondary">Finalizada</span>
+                                <!-- Opcional: También puedes poner un botón de editar aquí si quieres -->
+                                <a href="{{ url_for('admin.edit_promotion', promo_id=promo.id) }}" class="btn btn-sm btn-outline-secondary ms-2">Ver/Editar</a>
+                            </div>
+                        </div>
+                        {% endif %}
+                        <!-- --- FIN DE LA MODIFICACIÓN --- -->
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

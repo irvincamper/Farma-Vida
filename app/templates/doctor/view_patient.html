@@ -1,0 +1,66 @@
+<!-- app/templates/doctor/view_prescription.html -->
+{% extends 'layout/base.html' %}
+<!-- Supongo que el título podría ser dinámico con el nombre del paciente o el ID de la receta -->
+{% block title %}Receta Médica{% endblock %}
+
+{% block content %}
+    <header class="header d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="fas fa-file-medical"></i> Detalle de Receta</h1>
+            <!-- Aquí necesitarías pasar los datos de la receta desde la ruta -->
+            <p>Receta para: <strong>Nombre del Paciente (ejemplo)</strong></p> 
+        </div>
+        <div>
+            <!-- --- INICIO DE LA MODIFICACIÓN: BOTÓN DE IMPRIMIR FUNCIONAL --- -->
+            <!-- Le he añadido un id="printButton" para que el script lo encuentre -->
+            <button id="printButton" class="btn btn-primary">
+                <i class="fas fa-print me-2"></i>Imprimir Receta
+            </button>
+            <!-- --- FIN DE LA MODIFICACIÓN --- -->
+        </div>
+    </header>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Receta #00123 (ejemplo)</h5>
+        </div>
+        <div class="card-body" id="printableArea">
+            <!-- Aquí iría todo el contenido de la receta que quieres que se imprima -->
+            <h4>Medicamento: Amoxicilina 500mg</h4>
+            <p><strong>Dosis:</strong> 1 cápsula cada 8 horas por 7 días.</p>
+            <p><strong>Instrucciones:</strong> Tomar con alimentos. No consumir alcohol. Completar el tratamiento aunque los síntomas mejoren.</p>
+            
+            <hr>
+
+            <h4>Medicamento: Paracetamol 1g</h4>
+            <p><strong>Dosis:</strong> 1 tableta cada 6 horas si hay fiebre o dolor.</p>
+            <p><strong>Instrucciones:</strong> No exceder 4 gramos al día.</p>
+
+            <div class="mt-5 text-center">
+                <p>_________________________</p>
+                <p>Firma del Dr. {{ g.profile.nombre_completo }}</p>
+                <p><small>Fecha de Emisión: 2024-10-26</small></p>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+<!-- --- INICIO DE LA MODIFICACIÓN: SCRIPT PARA ACTIVAR EL BOTÓN DE IMPRIMIR --- -->
+{% block scripts %}
+<script>
+    // Este script se ejecuta cuando la página ha cargado
+    document.addEventListener('DOMContentLoaded', function() {
+        // Busca el botón que tiene el ID 'printButton'
+        const printBtn = document.getElementById('printButton');
+        
+        // Si lo encuentra, le asigna una acción al hacer clic
+        if (printBtn) {
+            printBtn.addEventListener('click', function() {
+                // Esta es la función mágica que abre el diálogo de impresión del navegador
+                window.print();
+            });
+        }
+    });
+</script>
+{% endblock %}
+<!-- --- FIN DE LA MODIFICACIÓN --- -->

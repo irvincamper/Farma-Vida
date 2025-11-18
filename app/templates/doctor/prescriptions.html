@@ -1,0 +1,64 @@
+{% extends 'layout/base.html' %}
+{% block title %}Gestión de Recetas{% endblock %}
+
+{% block content %}
+<header class="header">
+    <h1><i class="fas fa-file-medical-alt"></i> Gestión de Recetas Médicas</h1>
+    <p>Consulte el historial de recetas emitidas y cree nuevas prescripciones.</p>
+</header>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5>Historial de Recetas</h5>
+        <a href="{{ url_for('doctor.create_prescription') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Crear Nueva Receta
+        </a>
+    </div>
+    <div class="card-body">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID Receta</th>
+                        <th>Paciente</th>
+                        <th>Fecha de Emisión</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if prescriptions %}
+                        {% for p in prescriptions %}
+                        <tr>
+                            <td>#{{ p.id }}</td>
+                            <!-- --- INICIO DE LA CORRECCIÓN --- -->
+                            <td>{{ p.paciente.nombre_completo or 'No disponible' }}</td>
+                            <!-- --- FIN DE LA CORRECCIÓN --- -->
+                            <td>{{ p.created_at.split('T')[0] }}</td> {# Formateo simple para mostrar solo la fecha #}
+                            <td class="text-end">
+                                <a href="{{ url_for('doctor.view_prescription', prescription_id=p.id) }}" class="btn btn-sm btn-info" title="Ver Detalles"><i class="fas fa-eye"></i></a>
+                                <a href="{{ url_for('doctor.view_prescription', prescription_id=p.id) }}" class="btn btn-sm btn-secondary" title="Imprimir"><i class="fas fa-print"></i></a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center p-4">
+                                <p class="mb-0"><strong>No hay recetas en el historial.</strong></p>
+                                <small class="text-muted">Puede crear la primera usando el botón "Crear Nueva Receta".</small>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

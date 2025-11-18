@@ -1,0 +1,51 @@
+{% extends 'layout/base.html' %}
+{% block title %}Añadir Proveedor{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 40%, #fbc2eb 70%, #fcd6e6 100%);
+        font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    }
+    .card {
+        background: rgba(255,255,255,0.97);
+        border-radius: 20px;
+        box-shadow: 0 0 32px 8px #a1c4fd55, 0 0 0 2px #fbc2eb;
+        backdrop-filter: blur(2px);
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: #6a89cc;
+        text-shadow: 0 2px 12px #fbc2eb, 0 0 18px #c2e9fb;
+    }
+    .btn-primary {
+        background: linear-gradient(90deg, #a1c4fd 0%, #fbc2eb 100%);
+        color: #fff;
+        border: none;
+        box-shadow: 0 0 20px #a1c4fd;
+    }
+    .form-control {
+        background: #fcd6e6;
+        border: 2px solid #a1c4fd;
+    }
+    .form-control:focus {
+        border: 2px solid #6a89cc;
+        box-shadow: 0 0 20px #fbc2eb;
+        background: #c2e9fb;
+    }
+</style>
+    <header class="header">
+        <h1><i class="fas fa-truck-loading"></i> Añadir Nuevo Proveedor</h1>
+        <a href="{{ url_for('admin.inventory') }}" class="btn btn-secondary">Cancelar</a>
+    </header>
+    <div class="card"><div class="card-body">
+        <form method="POST">
+            <div class="mb-3"><label class="form-label">Nombre del Proveedor</label><input type="text" name="nombre" class="form-control" required></div>
+            <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label">Teléfono</label><input type="tel" name="telefono" class="form-control"></div>
+                <div class="col-md-6 mb-3"><label class="form-label">Email</label><input type="email" name="email" class="form-control"></div>
+            </div>
+            <div class="mb-3"><label class="form-label">Dirección</label><textarea name="direccion" class="form-control" rows="2"></textarea></div>
+            <button type="submit" class="btn btn-primary">Guardar Proveedor</button>
+        </form>
+    </div></div>
+{% endblock %}

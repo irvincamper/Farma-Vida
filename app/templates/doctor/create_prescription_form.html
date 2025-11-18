@@ -1,0 +1,90 @@
+<!-- app/templates/doctor/create_prescription_form.html -->
+{% extends 'layout/base.html' %}
+{% block title %}Crear Nueva Receta{% endblock %}
+{% block content %}
+<header class="header">
+    <h1><i class="fas fa-file-signature"></i> Nueva Receta Médica</h1>
+    <p>Ingrese los datos del paciente y el tratamiento a prescribir.</p>
+</header>
+
+<form method="POST">
+    <div class="card">
+        <div class="card-header">
+            <h5>Datos del Paciente</h5>
+        </div>
+        <div class="card-body">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="nombre_paciente" class="form-label">Nombre Completo del Paciente</label>
+                    <input type="text" id="nombre_paciente" name="nombre_paciente" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="curp_paciente" class="form-label">CURP del Paciente</label>
+                    <input type="text" id="curp_paciente" name="curp_paciente" class="form-control" 
+                           maxlength="18" minlength="18" required
+                           style="text-transform:uppercase" onkeyup="this.value = this.value.toUpperCase();">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="peso_paciente_kg" class="form-label">Peso (kg)</label>
+                    <input type="number" step="0.1" id="peso_paciente_kg" name="peso_paciente_kg" class="form-control" placeholder="Ej: 75.5">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="altura_paciente_cm" class="form-label">Altura (cm)</label>
+                    <input type="number" id="altura_paciente_cm" name="altura_paciente_cm" class="form-control" placeholder="Ej: 178">
+                </div>
+                <!-- --- INICIO DE LA MODIFICACIÓN: CAMPO 'sexo' RESTAURADO --- -->
+                 <div class="col-md-4 mb-3">
+                    <label for="sexo_paciente" class="form-label">Sexo</label>
+                    <select id="sexo_paciente" name="sexo_paciente" class="form-select">
+                        <option value="Masculino" selected>Masculino</option>
+                        <option value="Femenino">Femenino</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+                <!-- --- FIN DE LA MODIFICACIÓN --- -->
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5>Datos del Médico y Tratamiento</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                 <div class="col-md-6 mb-3">
+                    <label for="cedula_profesional" class="form-label">Cédula Profesional</label>
+                    <input type="text" id="cedula_profesional" name="cedula_profesional" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Médico que emite</label>
+                    <input type="text" class="form-control" value="{{ g.profile.nombre_completo }}" readonly>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="tratamiento" class="form-label">Tratamiento</label>
+                <textarea id="tratamiento" name="tratamiento" class="form-control" rows="8" required placeholder="Ej: ..."></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="recomendaciones" class="form-label">Recomendaciones Adicionales</label>
+                <textarea id="recomendaciones" name="recomendaciones" class="form-control" rows="4" placeholder="Ej: ..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-end mt-4">
+        <a href="{{ url_for('doctor.prescriptions') }}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Generar Receta</button>
+    </div>
+</form>
+{% endblock %}

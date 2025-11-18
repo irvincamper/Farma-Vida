@@ -1,0 +1,203 @@
+{% extends 'layout/base.html' %}
+{% block title %}Gestión de Inventario{% endblock %}
+{% block content %}
+    <header class="header">
+        <h1><i class="fas fa-pills"></i> Gestión de Inventario y Proveedores</h1>
+        <p>Supervise y administre todos los productos y proveedores de la farmacia.</p>
+    </header>
+
+    <div class="card">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs" id="inventoryTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#inventory-panel">Inventario General</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#providers-panel">Proveedores</button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content" id="inventoryTabsContent">
+                
+                <!-- === PESTAÑA DE INVENTARIO UNIFICADO === -->
+                <div class="tab-pane fade show active" id="inventory-panel" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="input-group" style="max-width: 400px;">
+                            <input type="text" class="form-control" placeholder="Buscar producto...">
+                        </div>
+                        <div>
+                            <!-- BOTÓN ÚNICO PARA AÑADIR CUALQUIER ITEM -->
+                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addItemModal"><i class="fas fa-plus me-2"></i>Añadir Item</button>
+                            <a href="{{ url_for('admin.export_inventory') }}" class="btn btn-info text-white"><i class="fas fa-file-export me-2"></i>Exportar a CSV</a>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Producto</th>
+                                    <th>Stock</th>
+                                    <th>Categoría</th>
+                                    <th class="text-end">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if inventory_items %}
+                                    {% for item in inventory_items %}
+                                    <tr>
+                                        <td>{{ item.id }}</td>
+                                        <td>{{ item.nombre }}</td>
+                                        <td>{{ item.stock }}</td>
+                                        <td>{{ item.categoria.nombre if item.categoria else 'N/A' }}</td>
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#restockModal" data-med-id="{{ item.id }}" data-med-name="{{ item.nombre }}">Reponer</button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr><td colspan="5" class="text-center">No hay items en el inventario.</td></tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- === PESTAÑA DE PROVEEDORES (SIN CAMBIOS) === -->
+                <div class="tab-pane fade" id="providers-panel" role="tabpanel">
+                    <div class="d-flex justify-content-end mb-3">
+                        <a href="{{ url_for('admin.create_provider') }}" class="btn btn-success"><i class="fas fa-plus me-2"></i>Añadir Proveedor</a>
+                    </div>
+                    <div class="row">
+                        {% if providers %}
+                            {% for provider in providers %}
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ provider.nombre }}</h5>
+                                        <p class="card-text"><i class="fas fa-phone me-2"></i>{{ provider.telefono or 'N/A' }}</p>
+                                        <p class="card-text"><i class="fas fa-envelope me-2"></i>{{ provider.email or 'N/A' }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="col-12"><p class="text-center text-muted">No hay proveedores registrados.</p></div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL UNIFICADO PARA AÑADIR CUALQUIER ITEM -->
+    <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addItemModalLabel">Añadir Item al Inventario</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Nombre del Item</label>
+              <input type="text" class="form-control" id="newItemName" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Stock Inicial</label>
+              <input type="number" class="form-control" id="newItemStock" value="10" min="0" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Categoría</label>
+              <select class="form-select" id="newItemCategory">
+                <option value="">Sin categoría</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-success" id="confirmAddItemBtn">Añadir Item</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Modal de Reponer (sin cambios) -->
+    <div class="modal fade" id="restockModal" tabindex="-1" aria-labelledby="restockModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+          <div class="modal-header"><h5 class="modal-title" id="restockModalLabel">Reponer: <span id="modalMedName"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+          <div class="modal-body"><input type="hidden" id="modalMedId"><div class="mb-3"><label class="form-label">Cantidad</label><input type="number" class="form-control" id="quantity" value="10" min="1"></div></div>
+          <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" id="confirmRestockBtn">Confirmar</button></div>
+      </div></div>
+    </div>
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // JS para Reponer (sin cambios)
+    const restockModal = document.getElementById('restockModal');
+    if (restockModal) {
+        restockModal.addEventListener('show.bs.modal', event => {
+            const button = event.relatedTarget;
+            const medId = button.getAttribute('data-med-id');
+            const medName = button.getAttribute('data-med-name');
+            restockModal.querySelector('#modalMedName').textContent = medName;
+            restockModal.querySelector('#modalMedId').value = medId;
+        });
+        document.getElementById('confirmRestockBtn').addEventListener('click', function() {
+            const medId = restockModal.querySelector('#modalMedId').value;
+            const quantity = restockModal.querySelector('#quantity').value;
+            fetch('{{ url_for("admin.restock_inventory") }}', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: medId, quantity: quantity})
+            }).then(res => res.json()).then(data => {
+                if (data.success) { alert(data.message); location.reload(); }
+                else { alert('Error: ' + data.message); }
+            });
+        });
+    }
+
+    // --- JAVASCRIPT UNIFICADO PARA AÑADIR CUALQUIER ITEM ---
+    const confirmAddItemBtn = document.getElementById('confirmAddItemBtn');
+    if (confirmAddItemBtn) {
+        confirmAddItemBtn.addEventListener('click', function() {
+            const name = document.getElementById('newItemName').value;
+            const stock = document.getElementById('newItemStock').value;
+            const categoryId = document.getElementById('newItemCategory').value;
+            if (!name || !stock) { return alert("Nombre y stock son obligatorios."); }
+
+            confirmAddItemBtn.disabled = true;
+            confirmAddItemBtn.textContent = "Guardando...";
+
+            fetch('{{ url_for("admin.add_inventory_item") }}', { 
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: name, stock: stock, category_id: categoryId})
+            }).then(res => res.json()).then(data => {
+                confirmAddItemBtn.disabled = false;
+                confirmAddItemBtn.textContent = "Añadir Item";
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('addItemModal').querySelector('button.btn-close').click();
+                    location.reload();
+                }
+                else {
+                    alert('Error: ' + data.message);
+                }
+            }).catch(() => {
+                confirmAddItemBtn.disabled = false;
+                confirmAddItemBtn.textContent = "Añadir Item";
+                alert('Error de conexión con el servidor.');
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

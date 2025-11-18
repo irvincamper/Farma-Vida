@@ -1,0 +1,94 @@
+{% extends 'layout/base.html' %}
+{% block title %}Gestión de Inventario{% endblock %}
+{% block content %}
+    <header class="header">
+        <h1><i class="fas fa-boxes"></i> Gestión de Inventario</h1>
+        <p>Bienvenido, {{ user_name }}.</p>
+    </header>
+
+    <div class="card">
+        <div class="card-header"><h5 class="mb-0">Stock de Productos</h5></div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead><tr><th>ID</th><th>Producto</th><th>Stock</th><th>Estado</th><th class="text-end">Acción</th></tr></thead>
+                    <tbody>
+                        {# Si la variable 'inventory_items' que viene de Python tiene datos, la usamos #}
+                        {% if inventory_items %}
+                            {% for item in inventory_items %}
+                            <tr>
+                                <td>{{ item.id }}</td>
+                                <td>{{ item.nombre }}</td>
+                                <td>{{ item.stock }}</td>
+                                <td>
+                                    {% if item.stock <= 10 %}
+                                        <span class="badge bg-warning text-dark">Bajo Stock</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Disponible</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary btn-edit" data-id="{{ item.id }}">Editar</button>
+                                    {% if item.stock <= 10 %}
+                                    <button class="btn btn-sm btn-outline-warning btn-reponer" data-id="{{ item.id }}">Reponer</button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        
+                        {# Si no hay datos reales, mostramos los ejemplos #}
+                        {% else %}
+                            <tr><td colspan="5" class="text-center bg-light fw-bold">Mostrando Datos de Ejemplo</td></tr>
+                            <tr>
+                                <td>101</td>
+                                <td>Amoxicilina 500mg</td>
+                                <td>42 cajas</td>
+                                <td><span class="badge bg-success">Disponible</span></td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary">Editar</button>
+                                    <button class="btn btn-sm btn-outline-warning">Reponer</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>103</td>
+                                <td>Omeprazol 40mg</td>
+                                <td>8 cajas</td>
+                                <td><span class="badge bg-warning text-dark">Bajo Stock</span></td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary">Editar</button>
+                                    <button class="btn btn-sm btn-outline-warning">Reponer</button>
+                                </td>
+                            </tr>
+                             <tr>
+                                <td>104</td>
+                                <td>Metformina 850mg</td>
+                                <td>5 cajas</td>
+                                <td><span class="badge bg-danger">Crítico</span></td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary">Editar</button>
+                                    <button class="btn btn-sm btn-outline-warning">Reponer</button>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.btn-edit').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    alert('Editar producto ID: ' + btn.dataset.id);
+                    // window.location.href = '/pharmacist/edit/' + btn.dataset.id;
+                });
+            });
+            document.querySelectorAll('.btn-reponer').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    alert('Reponer producto ID: ' + btn.dataset.id);
+                    // window.location.href = '/pharmacist/reponer/' + btn.dataset.id;
+                });
+            });
+        });
+    </script>
+{% endblock %}

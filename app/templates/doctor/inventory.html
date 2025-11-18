@@ -1,0 +1,100 @@
+<!-- app/templates/doctor/inventory.html -->
+{% extends 'layout/base.html' %}
+<!-- INICIO DE LA MODIFICACIÓN: Título corregido -->
+{% block title %}Consulta de Inventario{% endblock %}
+<!-- FIN DE LA MODIFICACIÓN -->
+{% block content %}
+    <header class="header">
+        <!-- INICIO DE LA MODIFICACIÓN: Título y Descripción corregidos -->
+        <h1><i class="fas fa-search-plus"></i> Consulta de Inventario</h1>
+        <p>Busque medicamentos y suministros disponibles en la farmacia.</p>
+        <!-- FIN DE LA MODIFICACIÓN -->
+    </header>
+
+    <div class="card">
+        <div class="card-header">
+            <!-- INICIO DE LA MODIFICACIÓN: Pestañas simplificadas para solo lectura -->
+            <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#meds-panel">Medicamentos</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#supplies-panel">Suministros</button></li>
+            </ul>
+            <!-- FIN DE LA MODIFICACIÓN -->
+        </div>
+        <div class="card-body">
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="meds-panel" role="tabpanel">
+                    <!-- INICIO DE LA MODIFICACIÓN: Barra de búsqueda sin botones de acción -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <input type="text" id="inventorySearchMeds" class="form-control" placeholder="Buscar medicamentos..." style="max-width: 400px;">
+                    </div>
+                    <!-- FIN DE LA MODIFICACIÓN -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <!-- INICIO DE LA MODIFICACIÓN: Cabecera de tabla simplificada -->
+                            <thead><tr><th>ID</th><th>Medicamento</th><th>Stock</th><th>Categoría</th></tr></thead>
+                            <!-- FIN DE LA MODIFICACIÓN -->
+                            <tbody id="medsTableBody">
+                                {% if inventory_items %}
+                                    {% for item in inventory_items %}
+                                    <tr class="searchable-item">
+                                        <td>{{ item.id }}</td>
+                                        <td>{{ item.nombre }}</td>
+                                        <td>{{ item.stock }}</td>
+                                        <td>{{ item.categoria or 'N/A' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr><td colspan="4" class="text-center">No hay medicamentos en el inventario.</td></tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Pestaña de Suministros (simplificada) -->
+                <div class="tab-pane fade" id="supplies-panel" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <input type="text" id="inventorySearchSupplies" class="form-control" placeholder="Buscar suministros..." style="max-width: 400px;">
+                    </div>
+                     <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead><tr><th>Nombre</th><th>Stock</th></tr></thead>
+                            <tbody id="suppliesTableBody">
+                                {% for supply in supplies %}
+                                <tr class="searchable-item">
+                                    <td>{{ supply.nombre }}</td>
+                                    <td>{{ supply.stock }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="2" class="text-center">No hay suministros.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<!-- INICIO DE LA MODIFICACIÓN: Script de búsqueda adaptado para ambas tablas -->
+<script>
+    function setupSearch(inputId, tableBodyId) {
+        document.getElementById(inputId).addEventListener('keyup', function() {
+            let filter = this.value.toLowerCase();
+            document.querySelectorAll(`#${tableBodyId} .searchable-item`).forEach(function(row) {
+                let text = row.textContent || row.innerText;
+                if (text.toLowerCase().indexOf(filter) > -1) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    setupSearch('inventorySearchMeds', 'medsTableBody');
+    setupSearch('inventorySearchSupplies', 'suppliesTableBody');
+</script>
+<!-- FIN DE LA MODIFICACIÓN -->
+{% endblock %}

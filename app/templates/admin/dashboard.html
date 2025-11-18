@@ -1,0 +1,46 @@
+{% extends 'layout/base.html' %}
+{% block title %}Panel de Administrador{% endblock %}
+{% block content %}
+    <header class="header">
+        <h1><i class="fas fa-shield-alt"></i> Panel de Administrador</h1>
+        <p>Bienvenido, {{ g.profile.nombre_completo }}.</p>
+    </header>
+
+    <!-- Fila de Estadísticas (con datos reales) -->
+    <div class="row">
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card text-white bg-primary h-100">
+                <div class="card-body"><div class="h1 fw-bold">{{ stats.total_users }}</div><div>Usuarios Totales</div></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card text-white bg-success h-100">
+                <div class="card-body"><div class="h1 fw-bold">{{ stats.total_doctors }}</div><div>Doctores</div></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card text-white bg-warning h-100">
+                <div class="card-body"><div class="h1 fw-bold">{{ stats.total_meds }}</div><div>Medicamentos</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Recetas Recientes (con datos de ejemplo) -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Recetas Recientes (Ejemplo)</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead><tr><th>Paciente</th><th>Medicamento</th><th>Estado</th></tr></thead>
+                    <tbody>
+                        <tr><td>María Rodríguez</td><td>Amoxicilina 500mg</td><td><span class="badge bg-success">Activa</span></td></tr>
+                        <tr><td>Juan Pérez</td><td>Atorvastatina 20mg</td><td><span class="badge bg-success">Activa</span></td></tr>
+                        <tr><td>Laura Martínez</td><td>Omeprazol 40mg</td><td><span class="badge bg-warning text-dark">Pendiente</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

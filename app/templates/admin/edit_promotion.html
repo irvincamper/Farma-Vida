@@ -1,0 +1,66 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Editar Promoción{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 40%, #fbc2eb 70%, #fcd6e6 100%);
+        font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    }
+    .card {
+        background: rgba(255,255,255,0.97);
+        border-radius: 20px;
+        box-shadow: 0 0 32px 8px #a1c4fd55, 0 0 0 2px #fbc2eb;
+        backdrop-filter: blur(2px);
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: #6a89cc;
+        text-shadow: 0 2px 12px #fbc2eb, 0 0 18px #c2e9fb;
+    }
+    .btn-primary {
+        background: linear-gradient(90deg, #a1c4fd 0%, #fbc2eb 100%);
+        color: #fff;
+        border: none;
+        box-shadow: 0 0 20px #a1c4fd;
+    }
+    .form-control {
+        background: #fcd6e6;
+        border: 2px solid #a1c4fd;
+    }
+    .form-control:focus {
+        border: 2px solid #6a89cc;
+        box-shadow: 0 0 20px #fbc2eb;
+        background: #c2e9fb;
+    }
+</style>
+    <header class="header">
+        <h1>Editar Promoción</h1>
+    </header>
+    <div class="card">
+        <div class="card-body">
+            <form method="POST">
+                <div class="mb-3">
+                    <label>Título</label>
+                    <input type="text" name="titulo" class="form-control" value="{{ promo.titulo }}" required>
+                </div>
+                <div class="mb-3">
+                    <label>Descripción</label>
+                    <textarea name="descripcion" class="form-control">{{ promo.descripcion }}</textarea>
+                </div>
+                <div class="row mb-3">
+                    <div class="col">
+                        <label>Inicio</label>
+                        <input type="date" name="fecha_inicio" class="form-control" value="{{ promo.fecha_inicio }}">
+                    </div>
+                    <div class="col">
+                        <label>Fin</label>
+                        <input type="date" name="fecha_fin" class="form-control" value="{{ promo.fecha_fin }}">
+                    </div>
+                </div>
+                <a href="{{ url_for('admin.promotions') }}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

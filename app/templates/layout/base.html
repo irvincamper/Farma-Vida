@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %} - CuidaMas</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <style>
+        /* 1. Fondo degradado para todo el cuerpo de la página */
+        body {
+            background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 40%, #fbc2eb 70%, #fcd6e6 100%);
+            font-family: 'Inter', sans-serif; /* Aseguramos la fuente */
+        }
+
+        /* 2. Estilo del sidebar con efecto de cristal esmerilado */
+        .sidebar {
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(5px);
+            border-right: 2px solid #fbc2eb;
+            box-shadow: 0 0 32px 8px #a1c4fd55;
+        }
+        
+        /* 3. Título del sidebar con colores y sombra del login */
+        .sidebar-title {
+            color: #6a89cc;
+            text-shadow: 0 2px 12px #fbc2eb, 0 0 18px #c2e9fb;
+            font-weight: 600;
+        }
+        
+        .sidebar-header {
+            border-bottom: 1px solid #a1c4fd80;
+        }
+        
+        /* 4. Estilo de los enlaces del menú */
+        .sidebar-menu .nav-link {
+            color: #5572a1; /* Color de texto sutil */
+            transition: all 0.3s ease;
+            position: relative;
+            margin: 5px 0;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .sidebar-menu .nav-link:hover {
+            color: #6a89cc; /* Color de texto más fuerte al pasar el mouse */
+            background: #c2e9fb; /* Fondo celeste claro */
+            box-shadow: 0 0 15px #fbc2eb66;
+            transform: translateY(-2px);
+        }
+        
+        /* 5. Estilo para el enlace ACTIVO, usando el degradado del botón de login */
+        .sidebar-menu .nav-link.active {
+            color: #fff;
+            background: linear-gradient(90deg, #a1c4fd 0%, #fbc2eb 100%);
+            box-shadow: 0 0 20px #a1c4fd;
+            font-weight: 700;
+        }
+        
+        .sidebar-menu .nav-link i {
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar-menu .nav-link:hover i {
+            transform: scale(1.1);
+        }
+        
+        .sidebar-menu .nav-link.active i {
+            color: #fff; /* Icono blanco en el enlace activo */
+        }
+        
+        /* 6. Estilo del botón de cerrar sesión */
+        .logout-button {
+            color: #ff3860;
+            border: 2px solid #ff3860;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        .logout-button:hover {
+            color: #fff;
+            background: #ff3860;
+            box-shadow: 0 0 15px rgba(255, 56, 96, 0.6);
+        }
+        
+        /* 7. Color de la línea divisora */
+        hr {
+            border-color: #a1c4fd80;
+        }
+
+    </style>
+    </head>
+<body class="{% block body_class %}{% endblock %}">
+
+    <div class="page-wrapper">
+        
+        {% if g.profile %}
+        <aside class="sidebar">
+            <div class="sidebar-header d-flex flex-column align-items-center text-center py-3">
+                <img src="{{ url_for('static', filename='img/logo-farma.png') }}" alt="Logo" class="sidebar-logo mb-2" style="width: 56px; height: 56px; object-fit: contain;">
+                <h4 class="sidebar-title mb-0">CuidaMas</h4>
+            </div>
+            <hr class="my-2">
+            <ul class="sidebar-menu nav flex-column align-items-center text-center">
+                {% set role = g.profile.get('roles', {}).get('nombre') %}
+                
+                {# === MENÚ DEL ADMINISTRADOR === #}
+                {% if role == 'administrador' %}
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('admin.dashboard') }}" class="nav-link py-2 rounded {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+                            <i class="fas fa-shield-alt"></i><span class="ms-2">Panel Principal</span>
+                        </a>
+                    </li>
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('admin.manage_users') }}" class="nav-link py-2 rounded {% if request.endpoint == 'admin.manage_users' %}active{% endif %}">
+                            <i class="fas fa-users-cog"></i><span class="ms-2">Gestionar Usuarios</span>
+                        </a>
+                    </li>
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('admin.inventory') }}" class="nav-link py-2 rounded {% if request.endpoint == 'admin.inventory' %}active{% endif %}">
+                            <i class="fas fa-pills"></i><span class="ms-2">Ver Inventario</span>
+                        </a>
+                    </li>
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('admin.reports') }}" class="nav-link py-2 rounded {% if request.endpoint == 'admin.reports' %}active{% endif %}">
+                            <i class="fas fa-chart-line"></i><span class="ms-2">Reportes</span>
+                        </a>
+                    </li>
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('admin.promotions') }}" class="nav-link py-2 rounded {% if request.endpoint == 'admin.promotions' %}active{% endif %}">
+                            <i class="fas fa-percent"></i><span class="ms-2">Promociones</span>
+                        </a>
+                    </li>
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('admin.settings') }}" class="nav-link py-2 rounded {% if request.endpoint == 'admin.settings' %}active{% endif %}">
+                            <i class="fas fa-cog"></i><span class="ms-2">Configuración</span>
+                        </a>
+                    </li>
+                    <li class="w-100"><hr class="dropdown-divider my-2"></li>
+                {% elif role == 'doctor' %}
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('doctor.dashboard') }}" class="nav-link py-2 rounded {% if request.endpoint == 'doctor.dashboard' %}active{% endif %}">
+                            <i class="fas fa-tachometer-alt"></i><span class="ms-2">Panel Principal</span>
+                        </a>
+                    </li>
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('doctor.patients') }}" class="nav-link py-2 rounded {% if request.endpoint == 'doctor.patients' %}active{% endif %}">
+                            <i class="fas fa-users"></i><span class="ms-2">Pacientes</span>
+                        </a>
+                    </li>
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('doctor.prescriptions') }}" class="nav-link py-2 rounded {% if request.endpoint == 'doctor.prescriptions' %}active{% endif %}">
+                            <i class="fas fa-file-prescription"></i><span class="ms-2">Recetas</span>
+                        </a>
+                    </li>
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('doctor.inventory') }}" class="nav-link py-2 rounded {% if request.endpoint == 'doctor.inventory' %}active{% endif %}">
+                            <i class="fas fa-pills"></i><span class="ms-2">Consultar Inventario</span>
+                        </a>
+                    </li>
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('patient.profile') }}" class="nav-link py-2 rounded {% if request.endpoint == 'patient.profile' %}active{% endif %}">
+                            <i class="fas fa-user-circle"></i><span class="ms-2">Mi Perfil</span>
+                        </a>
+                    </li>
+                    <li class="w-100"><hr class="dropdown-divider my-2"></li>
+                {% elif role == 'farmaceutico' %}
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('pharmacist.dashboard') }}" class="nav-link py-2 rounded {% if request.endpoint == 'pharmacist.dashboard' %}active{% endif %}">
+                            <i class="fas fa-tachometer-alt"></i><span class="ms-2">Panel Principal</span>
+                        </a>
+                    </li>
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('pharmacist.inventory') }}" class="nav-link py-2 rounded {% if request.endpoint == 'pharmacist.inventory' %}active{% endif %}">
+                            <i class="fas fa-boxes"></i><span class="ms-2">Inventario</span>
+                        </a>
+                    </li>
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('pharmacist.view_patients') }}" class="nav-link py-2 rounded {% if request.endpoint == 'pharmacist.view_patients' %}active{% endif %}">
+                            <i class="fas fa-users"></i><span class="ms-2">Ver Pacientes</span>
+                        </a>
+                    </li>
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('pharmacist.view_prescriptions') }}" class="nav-link py-2 rounded {% if request.endpoint == 'pharmacist.view_prescriptions' %}active{% endif %}">
+                            <i class="fas fa-file-prescription"></i><span class="ms-2">Ver Recetas</span>
+                        </a>
+                    </li>
+                    <li class="w-100"><hr class="dropdown-divider my-2"></li>
+                {% endif %}
+            </ul>
+            <div class="sidebar-footer d-flex justify-content-center py-3">
+                <a href="{{ url_for('auth.logout') }}" class="logout-button btn w-75">
+                    <i class="fas fa-sign-out-alt"></i><span class="ms-2">Cerrar Sesión</span>
+                </a>
+            </div>
+        </aside>
+        {% endif %}
+
+        <main class="main-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
