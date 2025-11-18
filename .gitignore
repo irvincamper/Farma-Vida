@@ -1,0 +1,16 @@
+# Archivos de entorno virtual (pesados e innecesarios en la nube)
+.venv/
+venv/
+env/
+
+# Archivos compilados de Python (basura técnica)
+__pycache__/
+*.py[cod]
+
+# Variables de entorno y secretos (SEGURIDAD CRÍTICA)
+.env
+.env.local
+
+# Archivos de sistema y configuraciones de VS Code
+.vscode/
+.DS_Store
