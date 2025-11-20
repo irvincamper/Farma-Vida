@@ -3,8 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Inicia sesión en CuidaMas, tu sistema de gestión farmacéutica y médica. Acceso seguro para personal autorizado.">
     <title>Iniciar Sesión - CuidaMas</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"></noscript>
+    
     <style>
         /* --- ESTILOS GENERALES Y DE FONDO --- */
         body {
@@ -64,8 +70,9 @@
         
         /* --- ESTILOS DEL LOGO --- */
         .login-logo {
-            width: 150px;
-            height: 150px;
+            /* Dimensiones visuales definidas aquí, pero se especifican en el HTML para evitar CLS */
+            width: 150px; 
+            height: 150px; 
             object-fit: contain;
             box-sizing: border-box;
             position: absolute;
@@ -201,7 +208,7 @@
         @keyframes pulse {
             0% { box-shadow: 0 4px 20px rgba(0,0,0,0.25), 0 0 30px #fbc2eb; }
             50% { box-shadow: 0 6px 30px rgba(0,0,0,0.3), 0 0 40px #a1c4fd; }
-            100% { box-shadow: 0 4px 20px rgba(0,0,0,0.25), 0 0 30px #fbc2eb; }
+            100% { box-shadow: 4px 20px rgba(0,0,0,0.25), 0 0 30px #fbc2eb; }
         }
     </style>
 </head>
@@ -236,7 +243,17 @@
 
 
     <div class="login-container">
-        <img src="{{ url_for('static', filename='logo-farma.png') }}" alt="Logo" class="login-logo">
+        <picture>
+            <source srcset="{{ url_for('static', filename='logo-farma.webp') }}" type="image/webp">
+            <img 
+                src="{{ url_for('static', filename='logo-farma.png') }}" 
+                alt="Logo CuidaMas" 
+                class="login-logo"
+                width="188" 
+                height="65" 
+                fetchpriority="high"
+            >
+        </picture>
         
         <div class="login-title">Iniciar Sesión</div>
         
@@ -250,7 +267,7 @@
                         id="toggle-password"
                         aria-label="Mostrar u Ocultar Contraseña" 
                         style="position:absolute; right:10px; top:50%; transform:translateY(-50%);
-                            background:none; border:none; color:#6a89cc; font-size:1.2rem; cursor:pointer;">
+                                background:none; border:none; color:#6a89cc; font-size:1.2rem; cursor:pointer;">
                     <i class="fa-regular fa-eye" id="eye-icon"></i>
                 </button>
                 </div>
@@ -282,7 +299,7 @@
             var closeBtn = document.getElementById('close-error-modal');
             if (modal && closeBtn) {
                 closeBtn.onclick = function() {
-                  modal.style.display = 'none';
+                    modal.style.display = 'none';
                 };
             }
 
@@ -293,6 +310,8 @@
                 toggleBtn.addEventListener('click', function() {
                     var isVisible = pwdInput.type === 'text';
                     pwdInput.type = isVisible ? 'password' : 'text';
+                    // MEJORA ADICIONAL: Cambiar aria-label dinámicamente
+                    toggleBtn.setAttribute('aria-label', isVisible ? 'Mostrar Contraseña' : 'Ocultar Contraseña');
                     eyeIcon.className = isVisible ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
                 });
             }
