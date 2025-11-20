@@ -8,13 +8,11 @@
 
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
 
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" crossorigin="anonymous">
     <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" crossorigin="anonymous"></noscript>
     
     <style>
-        /* --- ESTILOS GENERALES Y DE FONDO --- */
-        /* **MEJORA CLAVE FONT:** Aplicar font-display: swap a las fuentes de Font Awesome (si se cargan localmente, pero aquí la CDN lo hace) */
-        /* Para esta CDN específica, la mejor práctica es la carga asíncrona (ya implementada) */
+        /* --- ESTILOS GENERALES Y DE FONDO (Diseño sin cambios) --- */
         body {
             background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 40%, #fbc2eb 70%, #fcd6e6 100%);
             font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
@@ -26,9 +24,8 @@
             overflow: hidden;
         }
 
-        /* --- BARRA DE NAVEGACIÓN SUPERIOR --- */
+        /* --- BARRA DE NAVEGACIÓN SUPERIOR (Diseño sin cambios) --- */
         #neon-navbar {
-            /* ... (Estilos sin cambios) ... */
             width: 100vw; position: fixed; top: 0; left: 0; z-index: 200;
             box-shadow: 0 0 40px 10px #fbc2eb55, 0 0 0 4px #a1c4fd;
             border-bottom: 2px solid #a1c4fd;
@@ -47,9 +44,8 @@
         }
         .navbar-emoji { animation: emojiMove 3s infinite ease-in-out; }
 
-        /* --- CONTENEDOR DEL LOGIN --- */
+        /* --- CONTENEDOR DEL LOGIN (Diseño sin cambios) --- */
         .login-container {
-            /* ... (Estilos sin cambios) ... */
             background: rgba(255,255,255,0.97);
             border-radius: 20px;
             box-shadow: 0 0 32px 8px #a1c4fd55, 0 0 0 2px #fbc2eb;
@@ -72,9 +68,9 @@
             animation: neonBorder 6s linear infinite;
         }
         
-        /* --- ESTILOS DEL LOGO --- */
+        /* --- ESTILOS DEL LOGO (Diseño sin cambios) --- */
         .login-logo {
-            /* Dimensiones: 150x150px (coincide con width/height en HTML) */
+            /* Dimensiones definidas en CSS para el diseño */
             width: 150px; 
             height: 150px; 
             object-fit: contain;
@@ -92,7 +88,6 @@
         }
 
         .login-title {
-            /* ... (Estilos sin cambios) ... */
             color: #6a89cc;
             text-shadow: 0 2px 12px #fbc2eb, 0 0 18px #c2e9fb;
             font-size: 2rem; text-align: center;
@@ -101,7 +96,7 @@
             letter-spacing: 2px; font-weight: 600;
         }
 
-        /* --- FORMULARIO y el resto de estilos... (Sin cambios mayores) --- */
+        /* --- FORMULARIO y el resto de estilos... (Diseño sin cambios) --- */
         .input-group { width: 100%; position: relative; margin-bottom: 1.2rem; }
         .form-control { width: 100%; box-sizing: border-box; background: #fcd6e6; border: 2px solid #a1c4fd; border-radius: 8px; color: #222; padding: 0.8rem 1rem; font-size: 1rem; }
         .form-control:focus { border: 2px solid #6a89cc; outline: none; box-shadow: 0 0 20px #fbc2eb; background: #c2e9fb; }
@@ -154,17 +149,14 @@
 
 
     <div class="login-container">
-        <picture>
-            <source srcset="{{ url_for('static', filename='logo-farma.webp') }}" type="image/webp">
-            <img 
-                src="{{ url_for('static', filename='logo-farma.png') }}" 
-                alt="Logo CuidaMas" 
-                class="login-logo"
-                width="150" 
-                height="150" 
-                fetchpriority="high"
-            >
-        </picture>
+        <img 
+            src="{{ url_for('static', filename='logo-farma.png') }}" 
+            alt="Logo CuidaMas" 
+            class="login-logo"
+            width="150" 
+            height="150" 
+            fetchpriority="high"
+        >
         
         <div class="login-title">Iniciar Sesión</div>
         
