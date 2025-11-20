@@ -246,12 +246,14 @@
             </div>
             <div class="input-group">
                 <input type="password" name="password" class="form-control" placeholder="Contraseña" required id="password-input">
-                <button type="button" id="toggle-password"
-                    style="position:absolute; right:10px; top:50%; transform:translateY(-50%);
-                           background:none; border:none; color:#6a89cc; font-size:1.2rem; cursor:pointer;">
+                <button type="button" 
+                        id="toggle-password"
+                        aria-label="Mostrar u Ocultar Contraseña" 
+                        style="position:absolute; right:10px; top:50%; transform:translateY(-50%);
+                            background:none; border:none; color:#6a89cc; font-size:1.2rem; cursor:pointer;">
                     <i class="fa-regular fa-eye" id="eye-icon"></i>
                 </button>
-            </div>
+                </div>
             <button type="submit" class="btn-login">Entrar</button>
         </form>
     </div>
