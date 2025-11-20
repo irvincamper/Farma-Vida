@@ -243,17 +243,13 @@
 
 
     <div class="login-container">
-        <picture>
-            <source srcset="{{ url_for('static', filename='logo-farma.webp') }}" type="image/webp">
-            <img 
-                src="{{ url_for('static', filename='logo-farma.png') }}" 
-                alt="Logo CuidaMas" 
-                class="login-logo"
-                width="188" 
-                height="65" 
-                fetchpriority="high"
-            >
-        </picture>
+        <img 
+            src="{{ url_for('static', filename='logo-farma.png') }}" 
+            alt="Logo CuidaMas" 
+            class="login-logo"
+            width="150" 
+            height="150" 
+        >
         
         <div class="login-title">Iniciar Sesión</div>
         
@@ -265,10 +261,10 @@
                 <input type="password" name="password" class="form-control" placeholder="Contraseña" required id="password-input">
                 <button type="button" 
                         id="toggle-password"
-                        aria-label="Mostrar u Ocultar Contraseña" 
+                        aria-label="Mostrar Contraseña" 
                         style="position:absolute; right:10px; top:50%; transform:translateY(-50%);
                                 background:none; border:none; color:#6a89cc; font-size:1.2rem; cursor:pointer;">
-                    <i class="fa-regular fa-eye" id="eye-icon"></i>
+                    <i class="fa-regular fa-eye-slash" id="eye-icon"></i>
                 </button>
                 </div>
             <button type="submit" class="btn-login">Entrar</button>
@@ -310,9 +306,9 @@
                 toggleBtn.addEventListener('click', function() {
                     var isVisible = pwdInput.type === 'text';
                     pwdInput.type = isVisible ? 'password' : 'text';
-                    // MEJORA ADICIONAL: Cambiar aria-label dinámicamente
-                    toggleBtn.setAttribute('aria-label', isVisible ? 'Mostrar Contraseña' : 'Ocultar Contraseña');
-                    eyeIcon.className = isVisible ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+                    // MEJORA DE ACCESIBILIDAD: Cambiar aria-label dinámicamente
+                    toggleBtn.setAttribute('aria-label', isVisible ? 'Ocultar Contraseña' : 'Mostrar Contraseña');
+                    eyeIcon.className = isVisible ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash';
                 });
             }
 
@@ -551,7 +547,7 @@
                     // LÓGICA DE CONTRASEÑA: Literal + Quitar espacios
                     pwdInput.value = (interimTranscript || currentTranscript).replace(/\s+/g, '');
 
-                    // --- ¡CAMBIO CLAVE! Temporizador más largo para la contraseña ---
+                    // Temporizador más largo para la contraseña
                     speechTimeout = setTimeout(() => {
                         console.log("Fin de habla detectado (Pass).");
                         sharedRecognition.stop();
