@@ -1,0 +1,35 @@
+{% extends 'layout/base.html' %}
+{% block title %}Promociones para Pacientes{% endblock %}
+
+{% block content %}
+  <header class="header">
+    <h1><i class="fas fa-percent"></i> Promociones</h1>
+    <p>Ofertas y descuentos disponibles para pacientes.</p>
+  </header>
+
+  <div class="card">
+    <div class="card-body">
+      {% if promotions and promotions|length > 0 %}
+        <div class="list-group">
+          {% for promo in promotions %}
+            <div class="list-group-item d-flex justify-content-between align-items-start">
+              <div>
+                <h6 class="mb-1">{{ promo.titulo }}</h6>
+                <p class="mb-1">{{ promo.descripcion }}</p>
+                <small class="text-muted">Válido del {{ promo.fecha_inicio }} al {{ promo.fecha_fin }}</small>
+              </div>
+              <div>
+                <button class="btn btn-sm btn-outline-success">Aprovechar</button>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-center p-4">
+          <p class="mb-0">No hay promociones disponibles actualmente.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends 'layout/base.html' %}
+{% block title %}Solicitar Medicamento{% endblock %}
+
+{% block content %}
+  <header class="header">
+    <h1><i class="fas fa-truck-medical"></i> Solicitar Medicamento</h1>
+    <p>Envía una solicitud a farmacia para reabastecer o reservar un medicamento.</p>
+  </header>
+
+  <div class="card">
+    <div class="card-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('doctor.inventory_request') }}">
+        <div class="mb-3">
+          <label class="form-label">Nombre del medicamento</label>
+          <input name="nombre" class="form-control" required value="{{ nombre|default('') }}">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Cantidad</label>
+          <input name="cantidad" type="number" min="1" class="form-control" required value="{{ cantidad|default('1') }}">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Comentarios / Razón</label>
+          <textarea name="comentarios" class="form-control">{{ comentarios|default('') }}</textarea>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{{ url_for('doctor.inventory') }}" class="btn btn-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-primary">Enviar Solicitud</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends 'layout/base.html' %}
+{% block title %}Historial de Consultas{% endblock %}
+
+{% block content %}
+  <header class="header">
+    <h1><i class="fas fa-history"></i> Historial de Consultas</h1>
+    <p>Todas tus consultas y recetas anteriores.</p>
+  </header>
+
+  <div class="card">
+    <div class="card-body">
+      {% if history and history|length > 0 %}
+        <div class="list-group">
+          {% for item in history %}
+            <div class="list-group-item d-flex justify-content-between align-items-start">
+              <div>
+                <h6 class="mb-1">{{ item.fecha or item.created_at }}</h6>
+                <p class="mb-1">{{ item.resumen or item.tratamiento or 'Detalle de la consulta' }}</p>
+                <small class="text-muted">Doctor: {{ item.doctor_nombre if item.doctor_nombre else 'N/D' }}</small>
+              </div>
+              <div class="text-end">
+                <a href="{{ url_for('patient.view_prescription', prescription_id=item.get('prescripcion_id', '') ) }}" class="btn btn-sm btn-outline-primary">Ver</a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-center p-4">
+          <p class="mb-0">No hay historial aun. Tus consultas futuras aparecerán aquí.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+{% endblock %}

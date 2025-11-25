@@ -6,8 +6,8 @@
     <p>Cree y administre ofertas y descuentos especiales.</p>
 </header>
 
-<div class="card">
-    <div class="card-header">
+    <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
         <!-- Tu código original de pestañas - sin cambios -->
         <ul class="nav nav-tabs card-header-tabs" id="promoTabs" role="tablist">
             <li class="nav-item" role="presentation">
@@ -20,6 +20,23 @@
                 <button class="nav-link" id="history-promo-tab" data-bs-toggle="tab" data-bs-target="#history-promo-panel" type="button">Historial</button>
             </li>
         </ul>
+        <div class="d-flex align-items-center gap-2">
+            <form method="GET" action="{{ url_for('admin.promotions') }}" class="d-flex align-items-center">
+                <div class="input-group" style="max-width: 360px;">
+                    <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="search" name="q" class="form-control border-start-0" placeholder="Buscar por título o descripción..." value="{{ q|default('') }}">
+                </div>
+                <input type="hidden" name="order" value="{{ order|default('asc') }}">
+                <button class="btn btn-outline-secondary ms-2" type="submit">Buscar</button>
+            </form>
+
+            {% if promotions %}
+                <small class="text-muted ms-2">({{ promotions|length }} resultados)</small>
+            {% endif %}
+
+            {% set opposite = 'desc' if order == 'asc' else 'asc' %}
+            <a href="{{ url_for('admin.promotions') }}?q={{ q|urlencode }}&order={{ opposite }}" class="btn btn-outline-primary ms-2">{% if order == 'asc' %}A → Z{% else %}Z → A{% endif %}</a>
+        </div>
     </div>
     <div class="card-body">
         <div class="tab-content" id="promoTabsContent">

@@ -34,6 +34,26 @@ class User:
             print(f"Error en modelo User al actualizar nombre para {self.user_id}: {e}")
             return None, "No se pudo actualizar el perfil."
 
+    def update_profile(self, data: dict):
+        """
+        Actualiza varios campos del perfil del usuario en la tabla 'perfiles'.
+        data: dict con claves permitidas como 'nombre_completo', 'telefono', 'direccion', 'fecha_nacimiento', 'avatar_url'
+        """
+        allowed = {'nombre_completo', 'telefono', 'direccion', 'fecha_nacimiento', 'avatar_url'}
+        to_update = {k: v for k, v in data.items() if k in allowed}
+        if not to_update:
+            return None, "No hay campos válidos para actualizar."
+
+        try:
+            response = self.db.table('perfiles') \
+                .update(to_update) \
+                .eq('id', self.user_id) \
+                .execute()
+            return response.data, None
+        except Exception as e:
+            print(f"Error en modelo User al actualizar perfil para {self.user_id}: {e}")
+            return None, "No se pudo actualizar el perfil."
+
     def get_profile(self):
         """
         Obtiene la información completa del perfil del propio usuario.

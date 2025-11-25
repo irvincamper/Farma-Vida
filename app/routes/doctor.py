@@ -30,7 +30,20 @@ def patients():
     if err:
         flash(f'Error al cargar la lista de pacientes: {err}', 'danger')
         patients_list = []
-    return render_template('doctor/patients.html', patients=patients_list)
+
+    # support searching and ordering (A→Z / Z→A)
+    q = (request.args.get('q') or '').strip().lower()
+    order = (request.args.get('order') or 'asc').lower()
+
+    if not patients_list:
+        patients_list = []
+
+    if q:
+        patients_list = [p for p in patients_list if q in (p.get('nombre_completo') or '').lower() or q in (p.get('email') or '').lower()]
+
+    patients_list.sort(key=lambda p: (p.get('nombre_completo') or '').lower(), reverse=(order == 'desc'))
+
+    return render_template('doctor/patients.html', patients=patients_list, q=(q or ''), order=order)
 
 
 @doctor_bp.route('/prescriptions')
@@ -40,11 +53,34 @@ def prescriptions():
     doctor_id = g.profile['id']
     prescriptions_list, error = doctor_handler.get_all_prescriptions(doctor_id)
     
+    # support search & ordering (by patient name) via GET params `q` and `order`
+    q = (request.args.get('q') or '').strip().lower()
+    order = (request.args.get('order') or 'asc').lower()
+
     if error:
         flash(f"Error al cargar el historial de recetas: {error}", "danger")
         prescriptions_list = []
-        
-    return render_template('doctor/prescriptions.html', prescriptions=prescriptions_list)
+    # Defensive: ensure list
+    if not prescriptions_list:
+        prescriptions_list = []
+
+    # Filter by query: look into patient name or prescription id
+    if q:
+        def matches(pres):
+            patient_name = ((pres.get('paciente') or {}).get('nombre_completo') or '')
+            pres_id = str(pres.get('id') or '')
+            return q in patient_name.lower() or q in pres_id
+        prescriptions_list = [p for p in prescriptions_list if matches(p)]
+
+    # Sort alphabetically by patient name (or fallback to id)
+    def sort_key(p):
+        patient_name = ((p.get('paciente') or {}).get('nombre_completo') or '').lower()
+        pres_id = str(p.get('id') or '')
+        return (patient_name, pres_id)
+
+    prescriptions_list.sort(key=sort_key, reverse=(order == 'desc'))
+
+    return render_template('doctor/prescriptions.html', prescriptions=prescriptions_list, q=(q or ''), order=order)
 
 
 # --- INICIO DE LA CORRECCIÓN ---
@@ -58,7 +94,23 @@ def inventory():
     if inv_error:
         flash("Error al cargar los datos del inventario.", "danger")
         
-    return render_template('doctor/inventory.html', inventory_items=inventory_list or [])
+    # accept q and order (A→Z / Z→A)
+    q = (request.args.get('q') or '').strip().lower()
+    order = (request.args.get('order') or 'asc').lower()
+
+    if not inventory_list:
+        inventory_list = []
+
+    if q:
+        def matches_it(it):
+            name = (it.get('nombre') or '').lower()
+            cat = (it.get('categoria') or '') if isinstance(it.get('categoria'), str) else (it.get('categoria') or {}).get('nombre', '') if it.get('categoria') else ''
+            return q in name or q in (cat or '').lower()
+        inventory_list = [it for it in inventory_list if matches_it(it)]
+
+    inventory_list.sort(key=lambda it: (it.get('nombre') or '').lower(), reverse=(order == 'desc'))
+
+    return render_template('doctor/inventory.html', inventory_items=inventory_list or [], q=(q or ''), order=order)
 # --- FIN DE LA CORRECCIÓN ---
 
 
@@ -76,15 +128,15 @@ def create_patient():
         sexo = request.form.get('sexo')
 
         if not curp_value:
-             flash('Error: El campo CURP es obligatorio.', 'danger')
-             return render_template('doctor/create_patient_form.html')
+            flash('Error: El campo CURP es obligatorio.', 'danger')
+            return render_template('doctor/create_patient_form.html', nombre_completo=full_name, email=email, fecha_nacimiento=birth_date, info_contacto=contact_info, curp=curp_value, sexo=sexo)
         
         if password != confirm_password:
             flash('Las contraseñas no coinciden.', 'danger')
-            return render_template('doctor/create_patient_form.html')
+            return render_template('doctor/create_patient_form.html', nombre_completo=full_name, email=email, fecha_nacimiento=birth_date, info_contacto=contact_info, curp=curp_value, sexo=sexo)
         if len(password) < 8:
             flash('La contraseña debe tener al menos 8 caracteres.', 'danger')
-            return render_template('doctor/create_patient_form.html')
+            return render_template('doctor/create_patient_form.html', nombre_completo=full_name, email=email, fecha_nacimiento=birth_date, info_contacto=contact_info, curp=curp_value, sexo=sexo)
 
         curp = curp_value.upper()
         doctor_handler = Doctor()
@@ -95,12 +147,33 @@ def create_patient():
         
         if error:
             flash(f'Error al crear el paciente: {error}', 'danger')
-            return render_template('doctor/create_patient_form.html')
+            return render_template('doctor/create_patient_form.html', nombre_completo=full_name, email=email, fecha_nacimiento=birth_date, info_contacto=contact_info, curp=curp_value, sexo=sexo)
         else:
             flash(f'¡Paciente "{full_name}" creado con éxito!', 'success')
             return redirect(url_for('doctor.patients'))
             
     return render_template('doctor/create_patient_form.html')
+
+
+@doctor_bp.route('/inventory/request', methods=['GET', 'POST'])
+@role_required(allowed_roles=['doctor'])
+def inventory_request():
+    # simple request form - for now we just accept the request and show a message
+    if request.method == 'POST':
+        nombre = (request.form.get('nombre') or '').strip()
+        cantidad = request.form.get('cantidad')
+        comentarios = request.form.get('comentarios')
+
+        if not nombre or not cantidad:
+            flash('Nombre y cantidad son obligatorios.', 'danger')
+            return render_template('doctor/request_medication.html', nombre=nombre, cantidad=cantidad, comentarios=comentarios)
+
+        # Here you may integrate with the pharmacist model or supabase to save the request.
+        # For now we keep it simple and show a success message.
+        flash(f'Solicitud enviada: {nombre} × {cantidad}.', 'success')
+        return redirect(url_for('doctor.inventory'))
+
+    return render_template('doctor/request_medication.html')
 
 
 @doctor_bp.route('/patient/<int:patient_id>')

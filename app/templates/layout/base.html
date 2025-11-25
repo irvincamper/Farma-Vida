@@ -96,6 +96,27 @@
             border-color: #a1c4fd80;
         }
 
+        /* --- Collapsed sidebar variant --- */
+        body.sidebar-collapsed .sidebar {
+            width: 80px !important;
+            overflow: visible;
+        }
+        body.sidebar-collapsed .sidebar .sidebar-title { display: none; }
+        body.sidebar-collapsed .sidebar .sidebar-header img { width:48px; height:48px; }
+        body.sidebar-collapsed .sidebar .sidebar-menu .nav-link span { display: none; }
+        /* hide logout text and make button compact when collapsed */
+        body.sidebar-collapsed .sidebar-footer .logout-button span { display: none; }
+        body.sidebar-collapsed .sidebar-footer .logout-button { width: 56px; padding: 0.4rem; }
+        body.sidebar-collapsed .sidebar-footer .logout-button i { margin-right: 0 !important; }
+        body.sidebar-collapsed .sidebar .sidebar-menu .nav-link { padding-left: 0.75rem; padding-right: 0.75rem; }
+        body.sidebar-collapsed .main-content { margin-left: 80px !important; }
+
+        /* Floating toggle button (small) */
+        .sidebar-toggle-btn {
+            position: fixed; top: 12px; left: 12px; z-index: 1200;
+            border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
     </style>
     </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -194,6 +215,33 @@
                         </a>
                     </li>
                     <li class="w-100"><hr class="dropdown-divider my-2"></li>
+                {% elif role == 'paciente' %}
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('patient.profile') }}" class="nav-link py-2 rounded {% if request.endpoint == 'patient.profile' %}active{% endif %}">
+                            <i class="fas fa-user-circle"></i><span class="ms-2">Mi Perfil</span>
+                        </a>
+                    </li>
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('patient.edit_profile') }}" class="nav-link py-2 rounded {% if request.endpoint == 'patient.edit_profile' %}active{% endif %}">
+                            <i class="fas fa-user-edit"></i><span class="ms-2">Editar Perfil</span>
+                        </a>
+                    </li>
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('patient.history') }}" class="nav-link py-2 rounded {% if request.endpoint == 'patient.history' %}active{% endif %}">
+                            <i class="fas fa-history"></i><span class="ms-2">Historial</span>
+                        </a>
+                    </li>
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('patient.promotions') }}" class="nav-link py-2 rounded {% if request.endpoint == 'patient.promotions' %}active{% endif %}">
+                            <i class="fas fa-percent"></i><span class="ms-2">Promociones</span>
+                        </a>
+                    </li>
+                    <li class="nav-item w-100 my-1">
+                        <a href="{{ url_for('patient.prescriptions') }}" class="nav-link py-2 rounded {% if request.endpoint == 'patient.prescriptions' %}active{% endif %}">
+                            <i class="fas fa-file-prescription"></i><span class="ms-2">Ver Prescripciones</span>
+                        </a>
+                    </li>
+                    <li class="w-100"><hr class="dropdown-divider my-2"></li>
                 {% endif %}
             </ul>
             <div class="sidebar-footer d-flex justify-content-center py-3">
@@ -205,6 +253,9 @@
         {% endif %}
 
         <main class="main-content">
+            <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary sidebar-toggle-btn" title="Mostrar/ocultar menú">
+                <i id="sidebarToggleIcon" class="fa fa-bars"></i>
+            </button>
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
@@ -222,6 +273,39 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Persist sidebar collapsed state and toggle
+        (function() {
+            try {
+                const body = document.body;
+                const toggle = document.getElementById('sidebarToggle');
+                const icon = document.getElementById('sidebarToggleIcon');
+                const storageKey = 'cuidadmas_sidebar_collapsed';
+
+                function setCollapsed(collapsed) {
+                    if (collapsed) {
+                        body.classList.add('sidebar-collapsed');
+                        if (icon) icon.className = 'fa fa-angle-right';
+                    } else {
+                        body.classList.remove('sidebar-collapsed');
+                        if (icon) icon.className = 'fa fa-bars';
+                    }
+                    try { localStorage.setItem(storageKey, collapsed ? '1' : '0'); } catch(e){}
+                }
+
+                // initialize from localStorage
+                var initial = (function(){ try { return localStorage.getItem(storageKey) === '1'; } catch(e){ return false; } })();
+                setCollapsed(initial);
+
+                if (toggle) {
+                    toggle.addEventListener('click', function(e){
+                        e.preventDefault();
+                        setCollapsed(!document.body.classList.contains('sidebar-collapsed'));
+                    });
+                }
+            } catch(e) { console.error(e); }
+        })();
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

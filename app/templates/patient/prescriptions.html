@@ -1,0 +1,47 @@
+{% extends 'layout/base.html' %}
+{% block title %}Mis Recetas{% endblock %}
+{% block content %}
+<header class="header">
+    <h1><i class="fas fa-file-prescription"></i> Mis Recetas</h1>
+    <p class="text-muted">Aquí puedes ver tus recetas médicas registradas.</p>
+</header>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Recetas</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if prescriptions and prescriptions|length > 0 %}
+                        {% for r in prescriptions %}
+                        <tr>
+                            <td>#{{ r.id }}</td>
+                            <td>{{ r.created_at.split('T')[0] if r.created_at else 'N/A' }}</td>
+                            <td class="text-end">
+                                <a href="{{ url_for('patient.view_prescription', prescription_id=r.id) }}" class="btn btn-sm btn-info"><i class="fas fa-eye"></i> Ver</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4">
+                                <p class="mb-0"><strong>No hay recetas disponibles.</strong></p>
+                                <small class="text-muted">Si te han recetado algo, aparecerá aquí.</small>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

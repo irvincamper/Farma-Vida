@@ -183,16 +183,12 @@
             <div class="input-group">
                 <input type="email" name="email" class="form-control" placeholder="Correo electrónico" required id="email-input">
             </div>
-            <div class="input-group">
-                <input type="password" name="password" class="form-control" placeholder="Contraseña" required id="password-input">
-                <button type="button" 
-                        id="toggle-password"
-                        aria-label="Mostrar Contraseña" 
-                        style="position:absolute; right:10px; top:50%; transform:translateY(-50%);
-                                background:none; border:none; color:#6a89cc; font-size:1.2rem; cursor:pointer;">
+            <div class="input-group position-relative">
+                <input type="password" name="password" class="form-control" placeholder="Contraseña" required id="password-input" style="padding-right:2.8rem;">
+                <button type="button" id="toggle-password" aria-label="Mostrar Contraseña" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:#6a89cc; font-size:1.2rem; cursor:pointer; z-index:3; opacity:1;">
                     <i class="fa-regular fa-eye-slash" id="eye-icon"></i>
                 </button>
-                </div>
+            </div>
             <button type="submit" class="btn-login">Entrar</button>
         </form>
     </div>
@@ -225,16 +221,35 @@
                 };
             }
 
+            // Make login toggle identical to create-user toggle: preserve caret, keyboard accessible and always visible
             var toggleBtn = document.getElementById('toggle-password');
             var pwdInput = document.getElementById('password-input');
             var eyeIcon = document.getElementById('eye-icon');
             if (toggleBtn && pwdInput) {
-                toggleBtn.addEventListener('click', function() {
-                    var isVisible = pwdInput.type === 'text';
-                    pwdInput.type = isVisible ? 'password' : 'text';
-                    // MEJORA DE ACCESIBILIDAD: Cambiar aria-label dinámicamente
-                    toggleBtn.setAttribute('aria-label', isVisible ? 'Ocultar Contraseña' : 'Mostrar Contraseña');
-                    eyeIcon.className = isVisible ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash';
+                // non-focusable to avoid stealing focus while typing
+                toggleBtn.tabIndex = -1;
+
+                toggleBtn.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    var start = pwdInput.selectionStart;
+                    var end = pwdInput.selectionEnd;
+                    var wasFocused = (document.activeElement === pwdInput);
+
+                    var currentlyText = pwdInput.type === 'text';
+                    pwdInput.type = currentlyText ? 'password' : 'text';
+                    toggleBtn.setAttribute('aria-label', currentlyText ? 'Mostrar Contraseña' : 'Ocultar Contraseña');
+                    eyeIcon.className = currentlyText ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+
+                    if (wasFocused) {
+                        try { pwdInput.focus(); pwdInput.setSelectionRange(start, end); } catch(e) {}
+                    }
+                });
+
+                toggleBtn.addEventListener('keydown', function(e) {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault();
+                        toggleBtn.dispatchEvent(new MouseEvent('mousedown'));
+                    }
                 });
             }
 

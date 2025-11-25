@@ -1,127 +1,74 @@
 {% extends 'layout/base.html' %}
 {% block title %}Mi Perfil{% endblock %}
 {% block content %}
-    <header class="header">
-        <h1><i class="fas fa-user-circle"></i> Mi Perfil</h1>
-        <p>Bienvenido, {{ g.profile.nombre_completo }}.</p>
+    <header class="header mb-4">
+        <div>
+            <h1><i class="fas fa-user-circle"></i> Mi Perfil</h1>
+        </div>
     </header>
 
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="card h-100">
-                <div class="card-header"><i class="fas fa-history me-2"></i>Historial de Consultas</div>
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10 col-lg-8">
+            <div class="card shadow-sm" style="border-top:4px solid var(--bs-primary);">
                 <div class="card-body">
-                    {# Si la variable 'history' tiene datos reales, se mostrarán aquí #}
-                    {% if history and history|length > 0 %}
-                        <div class="accordion" id="historyAccordion">
+                    <div class="row align-items-center">
+                        <div class="col-12 col-md-4 text-center mb-3 mb-md-0">
+                            <div class="mx-auto rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center overflow-hidden" style="width:110px;height:110px;">
+                                {% if g.profile.get('avatar_url') %}
+                                    <img src="{{ g.profile.avatar_url }}" alt="Avatar" style="width:110px;height:110px;object-fit:cover;display:block;" />
+                                {% else %}
+                                    <i class="fas fa-user-circle fa-4x text-white"></i>
+                                {% endif %}
                             </div>
-                    {# Si no, mostramos los ejemplos #}
-                    {% else %}
-                        <div class="accordion" id="exampleHistoryAccordion">
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-example-1">
-                                        <strong>Consulta del 08 de Agosto de 2025</strong>
-                                    </button>
-                                </h2>
-                                <div id="collapse-example-1" class="accordion-collapse collapse" data-bs-parent="#exampleHistoryAccordion">
-                                    <div class="accordion-body">
-                                        <h5>Receta Médica</h5>
-                                        <p><strong>Doctor:</strong> Dr. Agustín Xoxocotla</p>
-                                        <hr>
-                                        <h6>Medicamentos:</h6>
-                                        <ul><li><strong>Amoxicilina 500mg:</strong> 1 tableta cada 8 horas.</li></ul>
-                                        <button class="btn btn-primary mt-3"><i class="fas fa-download"></i> Descargar PDF</button>
+                        </div>
+
+                        <div class="col-12 col-md-8">
+                            <div class="d-flex justify-content-between align-items-start flex-column flex-sm-row gap-2">
+                                <div>
+                                    <h3 class="mb-1">{{ g.profile.nombre_completo }}</h3>
+                                    <div class="text-muted small">{{ g.profile.email if g.profile.email else 'N/A' }}</div>
+                                </div>
+                                <div class="text-sm-end">
+                                    {# Editar Perfil moved to the sidebar menu to reduce duplication #}
+                                </div>
+                            </div>
+
+                            <hr class="my-3" />
+
+                            <div class="row">
+                                <div class="col-12 col-md-6 mb-3 mb-md-0">
+                                    <div class="rounded p-3 h-100 bg-primary text-white border-0">
+                                        <div class="small text-light">Próxima Cita</div>
+                                        {% if g.profile.proxima_cita %}
+                                            <div class="fw-bold fs-5 text-white">{{ g.profile.proxima_cita }}</div>
+                                        {% else %}
+                                            <div class="text-light">No tienes citas próximas registradas.</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <div class="rounded p-3 h-100 bg-primary text-white border-0">
+                                        <div class="small text-light">Mis Datos</div>
+                                        <div class="mt-1"><strong>Nombre:</strong> {{ g.profile.nombre_completo }}</div>
+                                        <div><strong>Email:</strong> {{ g.profile.email if g.profile.email else 'N/A' }}</div>
+                                        {% if g.profile.get('telefono') %}
+                                            <div><strong>Teléfono:</strong> {{ g.profile.telefono }}</div>
+                                        {% endif %}
+                                        {% if g.profile.get('direccion') %}
+                                            <div><strong>Dirección:</strong> {{ g.profile.direccion }}</div>
+                                        {% endif %}
+                                        {% if g.profile.get('fecha_nacimiento') %}
+                                            <div><strong>Fecha de Nacimiento:</strong> {{ g.profile.fecha_nacimiento }}</div>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-example-2">
-                                        <strong>Consulta del 15 de Julio de 2025</strong>
-                                    </button>
-                                </h2>
-                                <div id="collapse-example-2" class="accordion-collapse collapse" data-bs-parent="#exampleHistoryAccordion">
-                                    <div class="accordion-body">Contenido de la consulta anterior...</div>
-                                </div>
-                            </div>
                         </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-lg-4">
-            <div class="card text-white bg-primary mb-4">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-calendar-check me-2"></i>Próxima Cita (Ejemplo)</h5>
-                    <p class="card-text fs-5 fw-bold">Martes, 12 de Sep de 2025</p>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-header"><i class="fas fa-id-card me-2"></i>Mis Datos</div>
-                <div class="card-body">
-                    <p><strong>Nombre:</strong> {{ g.profile.nombre_completo }}</p>
-                    <p><strong>Email:</strong> {{ g.profile.email if g.profile.email else 'N/A' }}</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header"><i class="fas fa-gift me-2"></i>Promociones y Descuentos</div>
-                <div class="card-body">
-                    {# Si la variable 'promotions' tiene datos, se mostrarán aquí #}
-                    {% if promotions and promotions|length > 0 %}
-                        <div class="accordion" id="promotionsAccordion">
-                            {% for promo in promotions %}
-                                <div class="accordion-item">
-                                    <h2 class="accordion-header">
-                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-promo-{{ loop.index }}">
-                                            <strong>{{ promo.titulo }}</strong> <small class="ms-auto text-muted">(Vigente del {{ promo.fecha_inicio }} al {{ promo.fecha_fin }})</small>
-                                        </button>
-                                    </h2>
-                                    <div id="collapse-promo-{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#promotionsAccordion">
-                                        <div class="accordion-body">
-                                            {{ promo.descripcion }}
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {# Si no hay promociones, mostramos ejemplos #}
-                    {% else %}
-                        <div class="accordion" id="examplePromotionsAccordion">
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-promo-example-1">
-                                        <strong>Descuento en Limpieza Dental</strong> <small class="ms-auto text-muted">(Vigente del 2025-10-01 al 2025-10-31)</small>
-                                    </button>
-                                </h2>
-                                <div id="collapse-promo-example-1" class="accordion-collapse collapse" data-bs-parent="#examplePromotionsAccordion">
-                                    <div class="accordion-body">
-                                        Aprovecha un 20% de descuento en tu próxima limpieza dental durante todo el mes de octubre. ¡Agenda tu cita ahora!
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="accordion-item">
-                                <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-promo-example-2">
-                                        <strong>Promoción de Blanqueamiento</strong> <small class="ms-auto text-muted">(Vigente del 2025-11-01 al 2025-11-15)</small>
-                                    </button>
-                                </h2>
-                                <div id="collapse-promo-example-2" class="accordion-collapse collapse" data-bs-parent="#examplePromotionsAccordion">
-                                    <div class="accordion-body">
-                                        Luce una sonrisa más brillante. Obtén un 15% de descuento en tratamientos de blanqueamiento dental. Válido solo en la primera quincena de Noviembre.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
 {% endblock %}

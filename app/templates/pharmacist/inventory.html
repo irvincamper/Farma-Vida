@@ -7,7 +7,26 @@
     </header>
 
     <div class="card">
-        <div class="card-header"><h5 class="mb-0">Stock de Productos</h5></div>
+        <div class="card-header d-flex justify-content-between align-items-center gap-2 flex-wrap">
+            <h5 class="mb-0">Stock de Productos</h5>
+            <div class="d-flex align-items-center gap-2">
+                <form method="GET" action="{{ url_for('pharmacist.inventory') }}" class="d-flex align-items-center">
+                    <div class="input-group" style="max-width: 360px;">
+                        <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass"></i></span>
+                        <input type="search" name="q" class="form-control border-start-0" placeholder="Buscar producto o categoría..." value="{{ q|default('') }}">
+                    </div>
+                    <input type="hidden" name="order" value="{{ order|default('asc') }}">
+                    <button class="btn btn-outline-secondary ms-2" type="submit">Buscar</button>
+                </form>
+
+                {% if inventory_items %}
+                    <small class="text-muted">({{ inventory_items|length }} resultados)</small>
+                {% endif %}
+
+                {% set opposite = 'desc' if order == 'asc' else 'asc' %}
+                <a href="{{ url_for('pharmacist.inventory') }}?q={{ q|urlencode }}&order={{ opposite }}" class="btn btn-outline-primary ms-2">{% if order == 'asc' %}A → Z{% else %}Z → A{% endif %}</a>
+            </div>
+        </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-hover">

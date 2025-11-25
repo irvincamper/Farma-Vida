@@ -14,11 +14,11 @@
             <form method="POST" action="{{ url_for('admin.create_user') }}">
                 <div class="mb-3">
                     <label for="nombre_completo" class="form-label">Nombre Completo</label>
-                    <input type="text" id="nombre_completo" name="nombre_completo" class="form-control" required>
+                    <input type="text" id="nombre_completo" name="nombre_completo" class="form-control" required value="{{ nombre_completo|default('') }}">
                 </div>
                 <div class="mb-3">
                     <label for="email" class="form-label">Email (será su login)</label>
-                    <input type="email" id="email" name="email" class="form-control" required>
+                    <input type="email" id="email" name="email" class="form-control" required value="{{ email|default('') }}">
                 </div>
                 
                 <hr>
@@ -26,12 +26,23 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label for="password" class="form-label">Contraseña</label>
-                        <input type="password" id="password" name="password" class="form-control" required minlength="8">
-                        <small class="form-text text-muted">Mínimo 8 caracteres.</small>
+                        <div class="input-group position-relative">
+                            <input type="password" id="password" name="password" class="form-control" required minlength="8" aria-describedby="password-toggle-help" style="padding-right:2.8rem;">
+                            <button type="button" id="toggle-password" aria-label="Mostrar contraseña" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:#6a89cc; font-size:1.2rem; cursor:pointer; z-index:3; opacity:1;">
+                                <i class="fa-regular fa-eye-slash" id="eye-icon-password"></i>
+                            </button>
+                        </div>
+                        <small id="password-toggle-help" class="form-text text-muted">Mínimo 8 caracteres.</small>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="confirm_password" class="form-label">Confirmar Contraseña</label>
-                        <input type="password" id="confirm_password" name="confirm_password" class="form-control" required minlength="8">
+                        <div class="input-group position-relative">
+                            <input type="password" id="confirm_password" name="confirm_password" class="form-control" required minlength="8" aria-describedby="confirm-password-toggle-help" style="padding-right:2.8rem;">
+                            <button type="button" id="toggle-confirm-password" aria-label="Mostrar confirmación" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:#6a89cc; font-size:1.2rem; cursor:pointer; z-index:3; opacity:1;">
+                                <i class="fa-regular fa-eye-slash" id="eye-icon-confirm"></i>
+                            </button>
+                        </div>
+                        <small id="confirm-password-toggle-help" class="form-text text-muted">Vuelve a escribir la contraseña para confirmar.</small>
                     </div>
                 </div>
 
@@ -41,10 +52,10 @@
                     <label for="id_de_rol" class="form-label">Asignar Rol</label>
                     <select id="id_de_rol" name="id_de_rol" class="form-select" required>
                         <option value="" disabled selected>Seleccione un rol...</option>
-                        <option value="1">Administrador</option>
-                        <option value="2">Doctor</option>
-                        <option value="3">Paciente</option>
-                        <option value="4">Farmacéutico</option>
+                        <option value="1" {% if id_de_rol == '1' or id_de_rol == 1 %}selected{% endif %}>Administrador</option>
+                        <option value="2" {% if id_de_rol == '2' or id_de_rol == 2 %}selected{% endif %}>Doctor</option>
+                        <option value="3" {% if id_de_rol == '3' or id_de_rol == 3 %}selected{% endif %}>Paciente</option>
+                        <option value="4" {% if id_de_rol == '4' or id_de_rol == 4 %}selected{% endif %}>Farmacéutico</option>
                     </select>
                 </div>
                 
@@ -55,4 +66,61 @@
             </form>
         </div>
     </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var pwdInput = document.getElementById('password');
+        var confirmInput = document.getElementById('confirm_password');
+        var togglePwd = document.getElementById('toggle-password');
+        var toggleConfirm = document.getElementById('toggle-confirm-password');
+        var eyePwd = document.getElementById('eye-icon-password');
+        var eyeConfirm = document.getElementById('eye-icon-confirm');
+
+        function toggleVisibility(input, eyeIcon, toggleBtn, hideLabel, showLabel) {
+            if (!input || !eyeIcon || !toggleBtn) return;
+
+            // Prevent the toggle button from taking focus away from the input.
+            // Use mousedown / pointerdown to toggle immediately and restore caret selection.
+            toggleBtn.tabIndex = -1; // make non-focusable
+
+            toggleBtn.addEventListener('mousedown', function(e) {
+                e.preventDefault(); // avoid blurring the input
+
+                // Save selection / caret positions so we can restore them after changing type
+                var start = input.selectionStart;
+                var end = input.selectionEnd;
+                var wasFocused = (document.activeElement === input);
+
+                // Toggle type and icon
+                var currentlyText = input.type === 'text';
+                input.type = currentlyText ? 'password' : 'text';
+                toggleBtn.setAttribute('aria-label', currentlyText ? showLabel : hideLabel);
+                eyeIcon.className = currentlyText ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+
+                // restore focus and caret
+                if (wasFocused) {
+                    try {
+                        input.focus();
+                        input.setSelectionRange(start, end);
+                    } catch (err) {
+                        // some browsers may throw on setSelectionRange for type=password -> text changes
+                    }
+                }
+            });
+
+            // Also support keyboard activation (space/enter) without stealing focus
+            toggleBtn.addEventListener('keydown', function(e) {
+                if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    toggleBtn.dispatchEvent(new MouseEvent('mousedown'));
+                }
+            });
+        }
+
+        toggleVisibility(pwdInput, eyePwd, togglePwd, 'Ocultar contraseña', 'Mostrar contraseña');
+        toggleVisibility(confirmInput, eyeConfirm, toggleConfirm, 'Ocultar confirmación', 'Mostrar confirmación');
+    });
+</script>
 {% endblock %}

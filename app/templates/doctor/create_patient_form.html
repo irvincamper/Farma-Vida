@@ -24,26 +24,26 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label for="nombre_completo" class="form-label">Nombre Completo</label>
-                        <input type="text" id="nombre_completo" name="nombre_completo" class="form-control" required>
+                        <input type="text" id="nombre_completo" name="nombre_completo" class="form-control" required value="{{ nombre_completo|default('') }}">
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="curp" class="form-label">CURP</label>
-                        <input type="text" id="curp" name="curp" class="form-control" 
+                           <input type="text" id="curp" name="curp" class="form-control" 
                                placeholder="18 caracteres alfanuméricos" 
                                maxlength="18" minlength="18" required
                                style="text-transform:uppercase"
-                               onkeyup="this.value = this.value.toUpperCase();">
+                               onkeyup="this.value = this.value.toUpperCase();" value="{{ curp|default('') }}">
                     </div>
                 </div>
                 
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label for="email" class="form-label">Correo Electrónico</label>
-                        <input type="email" id="email" name="email" class="form-control" required>
+                        <input type="email" id="email" name="email" class="form-control" required value="{{ email|default('') }}">
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
-                        <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" class="form-control">
+                        <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" class="form-control" value="{{ fecha_nacimiento|default('') }}">
                     </div>
                 </div>
 
@@ -52,20 +52,39 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label for="password" class="form-label">Crear Contraseña</label>
-                        <input type="password" id="password" name="password" class="form-control" required minlength="8">
+                        <div class="position-relative">
+                            <input type="password" id="password" name="password" class="form-control" required minlength="8" aria-describedby="password-toggle-help" style="padding-right:2.8rem;">
+                            <button type="button" id="toggle-password" aria-label="Mostrar contraseña" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:#6a89cc; font-size:1.1rem; cursor:pointer; z-index:3; opacity:1;">
+                                <i class="fa-regular fa-eye-slash" id="eye-icon-password"></i>
+                            </button>
+                        </div>
                         <small class="form-text text-muted">Mínimo 8 caracteres.</small>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="confirm_password" class="form-label">Confirmar Contraseña</label>
-                        <input type="password" id="confirm_password" name="confirm_password" class="form-control" required minlength="8">
+                        <div class="position-relative">
+                            <input type="password" id="confirm_password" name="confirm_password" class="form-control" required minlength="8" aria-describedby="confirm-password-toggle-help" style="padding-right:2.8rem;">
+                            <button type="button" id="toggle-confirm-password" aria-label="Mostrar confirmación" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:#6a89cc; font-size:1.1rem; cursor:pointer; z-index:3; opacity:1;">
+                                <i class="fa-regular fa-eye-slash" id="eye-icon-confirm"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <h5 class="mt-4">Información Adicional (Opcional)</h5>
                 <hr>
-                <div class="mb-3">
+                    <div class="mb-3">
                     <label for="info_contacto" class="form-label">Teléfono u otro contacto</label>
-                    <textarea id="info_contacto" name="info_contacto" class="form-control" rows="3"></textarea>
+                    <textarea id="info_contacto" name="info_contacto" class="form-control" rows="3">{{ info_contacto|default('') }}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="sexo" class="form-label">Sexo</label>
+                    <select id="sexo" name="sexo" class="form-select">
+                        <option value="" {% if sexo is not defined or sexo == '' %}selected{% endif %}>Seleccione...</option>
+                        <option value="M" {% if sexo == 'M' %}selected{% endif %}>Masculino</option>
+                        <option value="F" {% if sexo == 'F' %}selected{% endif %}>Femenino</option>
+                        <option value="O" {% if sexo == 'O' %}selected{% endif %}>Otro</option>
+                    </select>
                 </div>
                 
                 <div class="d-flex justify-content-end mt-4">
@@ -75,4 +94,37 @@
             </form>
         </div>
     </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var pwdInput = document.getElementById('password');
+        var confirmInput = document.getElementById('confirm_password');
+        var togglePwd = document.getElementById('toggle-password');
+        var toggleConfirm = document.getElementById('toggle-confirm-password');
+        var eyePwd = document.getElementById('eye-icon-password');
+        var eyeConfirm = document.getElementById('eye-icon-confirm');
+
+        function toggleVisibility(input, eyeIcon, toggleBtn, hideLabel, showLabel) {
+            if (!input || !eyeIcon || !toggleBtn) return;
+            toggleBtn.tabIndex = -1;
+            toggleBtn.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                var start = input.selectionStart;
+                var end = input.selectionEnd;
+                var wasFocused = (document.activeElement === input);
+                var currentlyText = input.type === 'text';
+                input.type = currentlyText ? 'password' : 'text';
+                toggleBtn.setAttribute('aria-label', currentlyText ? showLabel : hideLabel);
+                eyeIcon.className = currentlyText ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+                if (wasFocused) { try { input.focus(); input.setSelectionRange(start, end); } catch(e){} }
+            });
+            toggleBtn.addEventListener('keydown', function(e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleBtn.dispatchEvent(new MouseEvent('mousedown')); } });
+        }
+
+        toggleVisibility(pwdInput, eyePwd, togglePwd, 'Ocultar contraseña', 'Mostrar contraseña');
+        toggleVisibility(confirmInput, eyeConfirm, toggleConfirm, 'Ocultar confirmación', 'Mostrar confirmación');
+    });
+</script>
 {% endblock %}

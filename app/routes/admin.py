@@ -42,7 +42,45 @@ def manage_users():
     users_list, error = admin_handler.get_all_users_with_roles()
     if error:
         flash("Error al cargar la lista de usuarios.", "danger")
-    return render_template('admin/manage_users.html', users=users_list)
+    # --- FILTRADO Y ORDENACIÓN PERSONALIZADA ---
+    # Parámetros de consulta: q (texto a buscar), order (asc|desc)
+    q = (request.args.get('q') or '').strip().lower()
+    order = (request.args.get('order') or 'asc').lower()
+
+    # Prioridad de roles: administrador, doctor, farmaceutico, paciente
+    role_priority = {
+        'administrador': 1,
+        'doctor': 2,
+        'farmaceutico': 3,
+        'paciente': 4
+    }
+
+    # Safety: ensure we have a list
+    if not users_list:
+        users_list = []
+
+    # Filter by search query (buscar por nombre completo o email)
+    if q:
+        def matches_query(u):
+            name = (u.get('nombre_completo') or '').lower()
+            email = (u.get('email') or '').lower()
+            return q in name or q in email
+        users_list = [u for u in users_list if matches_query(u)]
+
+    # Sorting: first by role priority, then alphabetically by nombre_completo
+    def sort_key(u):
+        role_name = ''
+        try:
+            role_name = (u.get('roles') or {}).get('nombre', '') or ''
+        except Exception:
+            role_name = ''
+        pr = role_priority.get(role_name.lower(), 99)
+        name = (u.get('nombre_completo') or '').lower()
+        return (pr, name)
+
+    users_list.sort(key=sort_key, reverse=(order == 'desc'))
+
+    return render_template('admin/manage_users.html', users=users_list, q=(q or ''), order=order)
 
 # ... (create_user, edit_user, delete_user sin cambios) ...
 @admin_bp.route('/users/new', methods=['GET', 'POST'])
@@ -57,17 +95,19 @@ def create_user():
 
         if password != confirm_password:
             flash('Las contraseñas no coinciden. Por favor, inténtelo de nuevo.', 'danger')
-            return render_template('admin/create_user_form.html')
+            return render_template('admin/create_user_form.html', nombre_completo=full_name, email=email, id_de_rol=role_id)
         
         if len(password) < 8:
             flash('La contraseña debe tener al menos 8 caracteres.', 'danger')
-            return render_template('admin/create_user_form.html')
+            return render_template('admin/create_user_form.html', nombre_completo=full_name, email=email, id_de_rol=role_id)
 
         admin_handler = Admin()
         _, error = admin_handler.create_any_user(full_name, email, role_id, password)
         
         if error:
             flash(f'Error al crear usuario: {error}', 'danger')
+            # keep the entered values so the admin can correct them without retyping
+            return render_template('admin/create_user_form.html', nombre_completo=full_name, email=email, id_de_rol=role_id)
         else:
             flash(f'Usuario "{full_name}" creado con éxito.', 'success')
             return redirect(url_for('admin.manage_users'))
@@ -124,10 +164,30 @@ def inventory():
     if inv_error or cat_error or prov_error:
         flash("Error al cargar datos del inventario.", "danger")
         
+    # --- FILTRADO Y ORDENACIÓN PARA INVENTARIO ---
+    q = (request.args.get('q') or '').strip().lower()
+    order = (request.args.get('order') or 'asc').lower()
+
+    if not inventory_list:
+        inventory_list = []
+
+    # Search by name or category or provider
+    if q:
+        def matches_inv(it):
+            name = (it.get('nombre') or '').lower()
+            cat = (it.get('categoria') or {}).get('nombre', '') if it.get('categoria') else ''
+            prov = (it.get('proveedor') or {}).get('nombre', '') if it.get('proveedor') else ''
+            return q in name or q in (cat or '').lower() or q in (prov or '').lower()
+        inventory_list = [it for it in inventory_list if matches_inv(it)]
+
+    # Sort by name
+    inventory_list.sort(key=lambda it: (it.get('nombre') or '').lower(), reverse=(order == 'desc'))
+
     return render_template('admin/inventory.html', 
                            inventory_items=inventory_list or [],
                            categories=categories or [],
-                           providers=providers_list or [])
+                           providers=providers_list or [],
+                           q=(q or ''), order=order)
 
 # RUTA UNIFICADA PARA AÑADIR CUALQUIER ITEM AL INVENTARIO
 @admin_bp.route('/inventory/add', methods=['POST'])
@@ -189,6 +249,10 @@ def reports():
 @role_required(allowed_roles=['administrador'])
 def promotions():
     promotions_list = []
+    # search and order
+    q = (request.args.get('q') or '').strip().lower()
+    order = (request.args.get('order') or 'asc').lower()
+
     try:
         raw_promotions = supabase.client.table('promociones').select("*").execute().data
         
@@ -203,7 +267,14 @@ def promotions():
     except Exception as e:
         flash(f"Error al obtener promociones: {e}", "danger")
         
-    return render_template('admin/promotions.html', promotions=promotions_list, now=datetime.utcnow())
+    # filter by query (titulo or descripcion)
+    if q:
+        promotions_list = [p for p in promotions_list if q in (p.get('titulo','') or '').lower() or q in (p.get('descripcion','') or '').lower()]
+
+    # sort by title
+    promotions_list.sort(key=lambda p: (p.get('titulo') or '').lower(), reverse=(order == 'desc'))
+
+    return render_template('admin/promotions.html', promotions=promotions_list, now=datetime.utcnow(), q=(q or ''), order=order)
     
 @admin_bp.route('/promotions/add', methods=['POST'])
 @role_required(allowed_roles=['administrador'])
