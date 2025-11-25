@@ -62,9 +62,11 @@ class User:
             response = self.db.table('perfiles') \
                 .select('*, roles(nombre)') \
                 .eq('id', self.user_id) \
-                .single() \
+                .maybe_single() \
                 .execute()
-            return response.data, None
+            if response and response.data:
+                return response.data, None
+            return None, None
         except Exception as e:
             print(f"Error en modelo User al obtener perfil para {self.user_id}: {e}")
             return None, "No se pudo obtener el perfil."

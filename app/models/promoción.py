@@ -15,8 +15,10 @@ class Promotion:
     def get_by_id(self, promo_id):
         try:
             # Tu código original - sin cambios
-            res = self.db.table('promociones').select('*').eq('id', promo_id).single().execute()
-            return res.data, None
+            res = self.db.table('promociones').select('*').eq('id', promo_id).maybe_single().execute()
+            if res and res.data:
+                return res.data, None
+            return None, None
         except Exception as e: return None, str(e)
 
     def create(self, titulo, descripcion, fecha_inicio, fecha_fin):

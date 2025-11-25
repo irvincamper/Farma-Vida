@@ -75,8 +75,10 @@ class Doctor:
             
     def get_patient_by_id(self, patient_id):
         try:
-            response = self.db.table('pacientes').select('*').eq('id', patient_id).single().execute()
-            return response.data, None
+            response = self.db.table('pacientes').select('*').eq('id', patient_id).maybe_single().execute()
+            if response and response.data:
+                return response.data, None
+            return None, None
         except Exception as e: 
             return None, str(e)
 
@@ -151,7 +153,9 @@ class Doctor:
         try:
             response = self.db.table('prescripcioness').select(
                 '*, paciente:pacientes(*), doctor:perfiles!prescripcioness_id_doctor_fkey(nombre_completo)'
-            ).eq('id', prescription_id).single().execute()
-            return response.data, None
+            ).eq('id', prescription_id).maybe_single().execute()
+            if response and response.data:
+                return response.data, None
+            return None, None
         except Exception as e:
             return None, str(e)

@@ -47,8 +47,8 @@ def create_app(config_object):
         if user_info and 'id' in user_info:
             user_id = user_info['id']
             try:
-                response = supabase_client.table('perfiles').select('*, roles(nombre)').eq('id', user_id).single().execute()
-                if response.data:
+                response = supabase_client.table('perfiles').select('*, roles(nombre)').eq('id', user_id).maybe_single().execute()
+                if response and response.data:
                     g.profile = response.data
             except Exception as e:
                 print(f"Error al cargar perfil: {e}")

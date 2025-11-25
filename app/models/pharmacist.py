@@ -61,7 +61,8 @@ class Pharmacist:
 
     def update_medicine(self, med_id, new_stock, new_name, new_category_id):
         try:
-            current = self.db.table('inventario').select('stock, nombre, categoria_id').eq('id', med_id).single().execute().data
+            res = self.db.table('inventario').select('stock, nombre, categoria_id').eq('id', med_id).maybe_single().execute()
+            current = res.data if res and res.data else None
             
             update_data = {
                 'stock': int(new_stock),
@@ -123,7 +124,7 @@ class Pharmacist:
         try:
             response = self.db.table('prescripcioness').select(
                 '*, doctor:perfiles!prescripcioness_id_doctor_fkey(nombre_completo), paciente:pacientes(*)'
-            ).eq('id', prescription_id).single().execute()
+            ).eq('id', prescription_id).maybe_single().execute()
             return response.data, None
         except Exception as e:
             return None, str(e)

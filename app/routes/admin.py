@@ -254,8 +254,9 @@ def promotions():
     order = (request.args.get('order') or 'asc').lower()
 
     try:
-        raw_promotions = supabase.client.table('promociones').select("*").execute().data
-        
+        resp_pr = supabase.client.table('promociones').select("*").execute()
+        raw_promotions = resp_pr.data if resp_pr and resp_pr.data else []
+
         if raw_promotions:
             for promo in raw_promotions:
                 if promo.get('fecha_inicio'):

@@ -21,8 +21,8 @@ class Patient:
         """
         try:
             # 1. Buscamos el ID numérico del paciente en la tabla 'pacientes'
-            patient_record = self.db.table('pacientes').select('id').eq('user_id', self.user_id).single().execute()
-            if not patient_record.data:
+            patient_record = self.db.table('pacientes').select('id').eq('user_id', self.user_id).maybe_single().execute()
+            if not patient_record or not patient_record.data:
                 return [], "No se encontró un registro de paciente para este usuario."
             
             patient_id = patient_record.data['id']

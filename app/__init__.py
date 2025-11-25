@@ -98,8 +98,8 @@ def register_hooks(app):
             user_id = user_info['id']
             try:
                 # Hacemos la consulta a la BD para obtener el perfil y el nombre del rol.
-                response = supabase.client.table('perfiles').select('*, roles(nombre)').eq('id', user_id).single().execute()
-                if response.data:
+                response = supabase.client.table('perfiles').select('*, roles(nombre)').eq('id', user_id).maybe_single().execute()
+                if response and response.data:
                     g.profile = response.data
             except Exception as e:
                 # Si algo falla (ej. el perfil fue borrado pero la sesión sigue activa), lo registramos.

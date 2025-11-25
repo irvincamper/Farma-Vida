@@ -20,14 +20,60 @@ def profile():
     # Creamos una instancia del especialista Paciente, pasándole su propio user_id
     patient_handler = Patient(g.profile['id']) 
     
-    # Obtenemos su historial médico
-    history, error = patient_handler.get_my_medical_history()
-    
+    # Obtenemos su historial médico (raw) y normalizamos un pequeño resumen para la vista
+    history_raw, error = patient_handler.get_my_medical_history()
+
+    history_summary = []
+    if history_raw:
+        for rec in history_raw:
+            fecha = rec.get('fecha_consulta') or rec.get('created_at') or rec.get('fecha')
+            resumen = rec.get('tratamiento') or rec.get('resumen') or rec.get('nota') or ''
+            doctor = None
+            if rec.get('doctor') and isinstance(rec.get('doctor'), dict):
+                doctor = rec['doctor'].get('nombre_completo')
+            elif rec.get('doctor_nombre'):
+                doctor = rec.get('doctor_nombre')
+
+            pres_id = None
+            if rec.get('recetas'):
+                if isinstance(rec['recetas'], list) and len(rec['recetas'])>0:
+                    pres_id = rec['recetas'][0].get('id') or rec['recetas'][0].get('prescription_id')
+                elif isinstance(rec['recetas'], dict):
+                    pres_id = rec['recetas'].get('id') or rec['recetas'].get('prescription_id')
+
+            history_summary.append({
+                'fecha': fecha,
+                'resumen': resumen,
+                'doctor_nombre': doctor,
+                'prescripcion_id': pres_id
+            })
+
     if error:
         flash("No se pudo cargar su historial médico.", "danger")
 
-    # Pasamos el historial a la plantilla (summary only)
-    return render_template('patient/profile.html', history=history, promotions=None)
+    # Obtener un par de promociones para mostrar en el perfil (si las hay)
+    promotions_list = []
+    try:
+        resp_pr = supabase.client.table('promociones').select('*').order('fecha_inicio', desc=True).limit(3).execute()
+        raw_promotions = resp_pr.data if resp_pr and resp_pr.data else []
+        for promo in raw_promotions:
+            if promo.get('fecha_inicio'):
+                try:
+                    promo['fecha_inicio'] = datetime.strptime(promo['fecha_inicio'], '%Y-%m-%d').date()
+                except Exception:
+                    pass
+            if promo.get('fecha_fin'):
+                try:
+                    promo['fecha_fin'] = datetime.strptime(promo['fecha_fin'], '%Y-%m-%d').date()
+                except Exception:
+                    pass
+        promotions_list = raw_promotions
+    except Exception as e:
+        # No queremos romper la vista, solo loguear/flashear
+        flash(f"Error al obtener promociones: {e}", "warning")
+
+    # Pasamos al template el resumen de historial y un pequeño conjunto de promociones
+    return render_template('patient/profile.html', history=history_summary, promotions=promotions_list)
 
 
 @patient_bp.route('/history')
@@ -37,7 +83,39 @@ def history():
         flash("No se pudo cargar tu historial.", "danger")
         return render_template('patient/history.html', history=[])
     patient_handler = Patient(g.profile['id'])
-    history, error = patient_handler.get_my_medical_history()
+    history_raw, error = patient_handler.get_my_medical_history()
+    history = []
+    # Normalize records for the template
+    if history_raw:
+        for rec in history_raw:
+            # fecha: prefer 'fecha_consulta', then created_at
+            fecha = rec.get('fecha_consulta') or rec.get('created_at') or rec.get('fecha')
+            # resumen: tratamiento or resumen or nota
+            resumen = rec.get('tratamiento') or rec.get('resumen') or rec.get('nota') or ''
+            # doctor name
+            doctor = None
+            if rec.get('doctor') and isinstance(rec.get('doctor'), dict):
+                doctor = rec['doctor'].get('nombre_completo')
+            elif rec.get('doctor_nombre'):
+                doctor = rec.get('doctor_nombre')
+            elif rec.get('doctor_nombre_completo'):
+                doctor = rec.get('doctor_nombre_completo')
+
+            # get prescription id if nested
+            pres_id = None
+            # recetas may be a list or dict
+            if rec.get('recetas'):
+                if isinstance(rec['recetas'], list) and len(rec['recetas'])>0:
+                    pres_id = rec['recetas'][0].get('id') or rec['recetas'][0].get('prescription_id')
+                elif isinstance(rec['recetas'], dict):
+                    pres_id = rec['recetas'].get('id') or rec['recetas'].get('prescription_id')
+
+            history.append({
+                'fecha': fecha,
+                'resumen': resumen,
+                'doctor_nombre': doctor,
+                'prescripcion_id': pres_id
+            })
     if error:
         flash("Error al cargar su historial médico.", "danger")
         history = []
@@ -49,7 +127,8 @@ def history():
 def promotions():
     promotions_list = []
     try:
-        raw_promotions = supabase.client.table('promociones').select("*").execute().data
+        resp_pr = supabase.client.table('promociones').select("*").execute()
+        raw_promotions = resp_pr.data if resp_pr and resp_pr.data else []
         if raw_promotions:
             for promo in raw_promotions:
                 if promo.get('fecha_inicio'):
@@ -66,8 +145,34 @@ def promotions():
 @patient_bp.route('/prescription/<int:prescription_id>')
 @role_required(allowed_roles=['paciente'])
 def view_prescription(prescription_id):
-    # In future: fetch prescription by id for this patient. For now render template.
-    return render_template('patient/view_prescription.html', prescription_id=prescription_id)
+    # Fetch prescription by id (ensure it belongs to logged-in patient)
+    prescription = None
+    try:
+        # Try to read prescription with nested doctor and medicamento info
+        resp = supabase.client.table('recetas').select('*, doctor:perfiles(nombre_completo), medicamento:inventario(nombre)').eq('id', prescription_id).maybe_single().execute()
+        if resp and resp.data:
+            prescription = resp.data
+        else:
+            flash('Receta no encontrada.', 'warning')
+            return render_template('patient/view_prescription.html', prescription_id=prescription_id)
+    except Exception as e:
+        flash(f'Error al obtener receta: {e}', 'danger')
+        return render_template('patient/view_prescription.html', prescription_id=prescription_id)
+
+    # Security: ensure the prescription belongs to the logged-in patient
+    try:
+        pat_rec = supabase.client.table('pacientes').select('id').eq('user_id', g.profile['id']).maybe_single().execute()
+        pat_id = pat_rec.data['id'] if pat_rec and pat_rec.data else None
+        # possible keys in prescription: patient_id or id_paciente
+        pres_owner = prescription.get('patient_id') or prescription.get('id_paciente')
+        if pat_id and pres_owner and str(pres_owner) != str(pat_id):
+            flash('No tienes permiso para ver esta receta.', 'danger')
+            return redirect(url_for('patient.profile'))
+    except Exception:
+        # if any problem checking ownership, continue but don't crash
+        pass
+
+    return render_template('patient/view_prescription.html', prescription=prescription)
 
 
 @patient_bp.route('/prescriptions')
@@ -79,16 +184,47 @@ def prescriptions():
 
     # Obtener ID numérico de paciente
     try:
-        patient_record = supabase.client.table('pacientes').select('id').eq('user_id', g.profile['id']).single().execute()
-        if not patient_record.data:
+        patient_record = supabase.client.table('pacientes').select('id').eq('user_id', g.profile['id']).maybe_single().execute()
+        if not patient_record or not patient_record.data:
             flash("No se encontró el registro de paciente.", "warning")
             return render_template('patient/prescriptions.html', prescriptions=[])
 
         patient_id = patient_record.data['id']
 
-        # Obtener recetas del paciente
-        response = supabase.client.table('recetas').select('*').eq('patient_id', patient_id).order('created_at', desc=True).execute()
-        prescriptions_list = response.data if response and response.data else []
+        # Obtener recetas del paciente (incluimos información del doctor si está relacionada)
+        response = supabase.client.table('recetas').select('*, doctor:perfiles(nombre_completo)').eq('patient_id', patient_id).order('created_at', desc=True).execute()
+        raw_list = response.data if response and response.data else []
+        prescriptions_list = []
+        for r in raw_list:
+            pres_id = r.get('id') or r.get('prescription_id')
+            created = r.get('created_at') or r.get('fecha') or r.get('fecha_emision')
+            # doctor may be nested as dict { nombre_completo: ... }
+            doctor_name = None
+            if r.get('doctor') and isinstance(r.get('doctor'), dict):
+                doctor_name = r['doctor'].get('nombre_completo')
+            elif r.get('doctor_nombre'):
+                doctor_name = r.get('doctor_nombre')
+
+            # medicamentos may be nested: recetas table may store medicamento references
+            meds = []
+            if r.get('medicamento'):
+                if isinstance(r['medicamento'], list):
+                    for m in r['medicamento']:
+                        if isinstance(m, dict):
+                            meds.append(m.get('nombre') or str(m))
+                        else:
+                            meds.append(str(m))
+                elif isinstance(r['medicamento'], dict):
+                    meds.append(r['medicamento'].get('nombre') or str(r['medicamento']))
+                else:
+                    meds.append(str(r['medicamento']))
+
+            prescriptions_list.append({
+                'id': pres_id,
+                'created_at': created,
+                'doctor_nombre': doctor_name,
+                'medicamentos': meds
+            })
     except Exception as e:
         flash(f"Error al cargar recetas: {e}", "danger")
         prescriptions_list = []

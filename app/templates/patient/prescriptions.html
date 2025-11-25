@@ -17,6 +17,8 @@
                     <tr>
                         <th>ID</th>
                         <th>Fecha</th>
+                        <th>Médico</th>
+                        <th>Medicamento</th>
                         <th class="text-end">Acciones</th>
                     </tr>
                 </thead>
@@ -25,7 +27,16 @@
                         {% for r in prescriptions %}
                         <tr>
                             <td>#{{ r.id }}</td>
-                            <td>{{ r.created_at.split('T')[0] if r.created_at else 'N/A' }}</td>
+                            <td>{{ (r.created_at.split('T')[0] if r.created_at else 'N/A') }}</td>
+                            <td>{{ r.doctor_nombre or 'N/A' }}</td>
+                            <td>
+                                {% if r.medicamentos and r.medicamentos|length > 0 %}
+                                    {{ r.medicamentos | join(', ') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            
+                            </td>
                             <td class="text-end">
                                 <a href="{{ url_for('patient.view_prescription', prescription_id=r.id) }}" class="btn btn-sm btn-info"><i class="fas fa-eye"></i> Ver</a>
                             </td>

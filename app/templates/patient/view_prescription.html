@@ -9,20 +9,36 @@
     </div>
 
     <div class="card">
-        <div class="card-header">
-            Receta #12345 - emitida el 2025-08-02
-        </div>
-        <div class="card-body">
-            <p><strong>Doctor:</strong> Dr. Jorge Neri Trejo</p>
-            <hr>
-            <h5>Medicamentos:</h5>
-            <ul>
-                <li><strong>Paracetamol 500mg:</strong> Tomar 1 tableta cada 8 horas por 3 días.</li>
-                <li><strong>Amoxicilina 250mg:</strong> Tomar 1 cápsula cada 12 horas por 7 días.</li>
-            </ul>
-        </div>
-        <div class="card-footer text-end">
-            <button class="btn btn-primary"><i class="fas fa-print me-2"></i> Imprimir Receta</button>
-        </div>
+        {% if prescription %}
+            <div class="card-header">Receta #{{ prescription.id }} - emitida {{ prescription.created_at | format_datetime }}</div>
+            <div class="card-body">
+                <p><strong>Doctor:</strong> {{ prescription.doctor.nombre_completo if prescription.get('doctor') else (prescription.get('doctor_nombre') or 'N/A') }}</p>
+                <hr>
+                <h5>Medicamentos:</h5>
+                {% if prescription.get('medicamento') %}
+                    {# 'medicamento' can be a dict or a list depending on schema #}
+                    {% if prescription.medicamento is iterable and not prescription.medicamento.name %}
+                        <ul>
+                        {% for m in prescription.medicamento %}
+                            <li>{{ m.nombre if m.get('nombre') else m }}</li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <ul>
+                            <li>{{ prescription.medicamento.nombre if prescription.medicamento.get('nombre') else prescription.medicamento }}</li>
+                        </ul>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted">No hay medicamentos listados para esta receta.</p>
+                {% endif %}
+            </div>
+            <div class="card-footer text-end">
+                <button class="btn btn-primary"><i class="fas fa-print me-2"></i> Imprimir Receta</button>
+            </div>
+        {% else %}
+            <div class="card-body">
+                <p class="mb-0">La receta solicitada no pudo ser encontrada. Si crees que esto es un error, contacta al soporte.</p>
+            </div>
+        {% endif %}
     </div>
 {% endblock %}

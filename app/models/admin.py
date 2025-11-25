@@ -52,8 +52,10 @@ class Admin:
             
     def get_user_by_id(self, user_id):
         try:
-            response = self.db.table('perfiles').select('*, roles(id, nombre)').eq('id', user_id).single().execute()
-            return response.data, None
+            response = self.db.table('perfiles').select('*, roles(id, nombre)').eq('id', user_id).maybe_single().execute()
+            if response and response.data:
+                return response.data, None
+            return None, None
         except Exception as e:
             return None, str(e)
 

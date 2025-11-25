@@ -40,7 +40,8 @@ def login():
             session['user'] = auth_response.user.dict()
             flash('Inicio de sesión exitoso.', 'success')
 
-            profile_data = supabase.client.table('perfiles').select('*, roles(nombre)').eq('id', auth_response.user.id).single().execute().data
+            resp = supabase.client.table('perfiles').select('*, roles(nombre)').eq('id', auth_response.user.id).maybe_single().execute()
+            profile_data = resp.data if resp and resp.data else None
             
             if not profile_data or not profile_data.get('roles') or not profile_data.get('roles').get('nombre'):
                 flash('Perfil o rol no encontrado. Contacte al administrador.', 'danger')

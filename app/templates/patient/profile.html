@@ -71,4 +71,75 @@
         </div>
     </div>
 
+    <!-- Short summary area: recent history & promotions -->
+    <div class="row justify-content-center mt-4">
+        <div class="col-12 col-md-10 col-lg-8">
+            <div class="row g-3">
+                <div class="col-12 col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <h5 class="mb-3"><i class="fas fa-notes-medical"></i> Últimas Consultas</h5>
+                            {% if history and history|length > 0 %}
+                                <ul class="list-group list-group-flush">
+                                    {% for item in history[:3] %}
+                                    <li class="list-group-item py-2">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <div class="fw-bold">{{ item.doctor_nombre if item.doctor_nombre else 'Consulta' }}</div>
+                                                <div class="small text-muted">{{ item.fecha if item.fecha else 'Fecha desconocida' }}</div>
+                                            </div>
+                                            <div class="text-end">
+                                                {% if item.prescripcion_id %}
+                                                    <a href="{{ url_for('patient.view_prescription', prescription_id=item.prescripcion_id) }}" class="btn btn-sm btn-outline-primary">Ver receta</a>
+                                                {% else %}
+                                                    <a href="{{ url_for('patient.history') }}" class="btn btn-sm btn-outline-secondary">Ver historial</a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% if item.resumen %}
+                                            <div class="small mt-2 text-muted">{{ item.resumen|truncate(140, True) }}</div>
+                                        {% endif %}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                <div class="mt-3 text-end"><a href="{{ url_for('patient.history') }}" class="btn btn-sm btn-link">Ver todo</a></div>
+                            {% else %}
+                                <div class="text-muted">Aún no tienes consultas registradas.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <h5 class="mb-3"><i class="fas fa-percent"></i> Promociones</h5>
+                            {% if promotions and promotions|length > 0 %}
+                                <ul class="list-group list-group-flush">
+                                    {% for promo in promotions %}
+                                        <li class="list-group-item py-2">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <div class="fw-bold">{{ promo.titulo or promo.nombre or 'Promoción' }}</div>
+                                                    {% if promo.descripcion %}
+                                                        <div class="small text-muted">{{ promo.descripcion|truncate(100, True) }}</div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="text-end small text-muted">
+                                                    {% if promo.fecha_inicio %}{{ promo.fecha_inicio }}{% endif %}
+                                                </div>
+                                            </div>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                                <div class="mt-3 text-end"><a href="{{ url_for('patient.promotions') }}" class="btn btn-sm btn-link">Ver todas</a></div>
+                            {% else %}
+                                <div class="text-muted">No hay promociones disponibles por ahora.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
