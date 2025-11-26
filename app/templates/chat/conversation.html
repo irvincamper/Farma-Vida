@@ -1,0 +1,35 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h3>Chat con {{ other.nombre_completo }}</h3>
+  <div id="chat-box" style="border:1px solid #ddd; padding:10px; height:400px; overflow:auto; background:#fafafa;">
+    {% for m in messages %}
+      {% set is_me = (m.sender_id == me_id) %}
+      <div style="margin-bottom:8px; text-align: {{ 'right' if is_me else 'left' }};">
+        <div style="display:inline-block; max-width:75%; padding:8px; border-radius:8px; background: {{ '#d1ffd6' if is_me else '#fff' }}; border:1px solid #eee;">{{ m.content }}</div>
+        <div style="font-size:0.8em; color:#666;">{{ (m.created_at or '') }}</div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <form id="send-form" method="post" action="{{ url_for('chat.send_form') }}" class="mt-3">
+    <input type="hidden" name="receiver_id" value="{{ other.id }}">
+    <div class="input-group">
+      <input id="message-input" name="content" class="form-control" placeholder="Escribe un mensaje..." autocomplete="off">
+      <div class="input-group-append">
+        <button class="btn btn-primary" type="submit">Enviar</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+<script>
+  const otherId = "{{ other.id }}";
+  const meId = "{{ me_id }}";
+  // Inicializa polling
+  startChatPolling(otherId, meId);
+</script>
+
+{% endblock %}

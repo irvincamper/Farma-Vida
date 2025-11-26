@@ -1,0 +1,22 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h3>Conversaciones recientes</h3>
+  <div class="list-group mt-3">
+    {% if conversations and conversations|length > 0 %}
+      {% for c in conversations %}
+        <a href="{{ url_for('chat.conversation', other_user_id=c.partner_id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-start">
+          <div>
+            <div class="fw-bold">{{ c.partner_name or c.partner_id }}</div>
+            <div class="small text-muted">{{ c.last_message.content }}</div>
+          </div>
+          <div class="small text-muted">{{ c.last_message.created_at or '' }}</div>
+        </a>
+      {% endfor %}
+    {% else %}
+      <div class="text-muted">No hay conversaciones todavía. Empieza una desde <a href="{{ url_for('chat.doctors') }}">Contactar a un doctor</a>.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

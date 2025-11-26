@@ -29,7 +29,10 @@
                                     <div class="text-muted small">{{ g.profile.email if g.profile.email else 'N/A' }}</div>
                                 </div>
                                 <div class="text-sm-end">
-                                    {# Editar Perfil moved to the sidebar menu to reduce duplication #}
+                                        {# Editar Perfil moved to the sidebar menu to reduce duplication #}
+                                        <div class="mt-2">
+                                            <a href="{{ url_for('chat.doctors') }}" class="btn btn-sm btn-outline-light">Contactar a un doctor</a>
+                                        </div>
                                 </div>
                             </div>
 

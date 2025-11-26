@@ -1,0 +1,24 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h3>Contactar a un Doctor</h3>
+  <div class="list-group mt-3">
+    {% if doctors and doctors|length > 0 %}
+      {% for d in doctors %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-bold">{{ d.nombre_completo or 'Doctor' }}</div>
+            <div class="small text-muted">ID: {{ d.id }}</div>
+          </div>
+          <div>
+            <a class="btn btn-sm btn-primary" href="{{ url_for('chat.conversation', other_user_id=d.id) }}">Abrir chat</a>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="text-muted">No se encontraron doctores.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -54,7 +54,11 @@ def profile():
     # Obtener un par de promociones para mostrar en el perfil (si las hay)
     promotions_list = []
     try:
-        resp_pr = supabase.client.table('promociones').select('*').order('fecha_inicio', desc=True).limit(3).execute()
+        # Some test fakes may not implement `.limit()`; call it only if available.
+        q = supabase.client.table('promociones').select('*').order('fecha_inicio', desc=True)
+        if hasattr(q, 'limit'):
+            q = q.limit(3)
+        resp_pr = q.execute()
         raw_promotions = resp_pr.data if resp_pr and resp_pr.data else []
         for promo in raw_promotions:
             if promo.get('fecha_inicio'):

@@ -71,6 +71,7 @@ def register_blueprints(app):
     from .routes.patient import patient_bp
     from .routes.admin import admin_bp
     from .routes.pharmacist import pharmacist_bp
+    from .routes.chat import chat_bp
 
     # Cada blueprint se registra con un prefijo de URL para mantener las rutas organizadas.
     app.register_blueprint(auth_bp)
@@ -78,6 +79,15 @@ def register_blueprints(app):
     app.register_blueprint(doctor_bp, url_prefix='/doctor')
     app.register_blueprint(pharmacist_bp, url_prefix='/pharmacist')
     app.register_blueprint(patient_bp, url_prefix='/patient')
+    app.register_blueprint(chat_bp, url_prefix='/chat')
+    # Registrar rutas de desarrollo opcionales
+    if app.config.get('ENABLE_DEV_ROUTES'):
+        try:
+            from .routes.dev import dev_bp
+            app.register_blueprint(dev_bp)
+        except Exception:
+            # no fatal: si el módulo dev no existe, ignoramos
+            pass
 
 def register_hooks(app):
     """
@@ -92,6 +102,12 @@ def register_hooks(app):
         El perfil se guarda en 'g', un objeto temporal que vive solo durante la petición.
         """
         g.profile = None # Inicializamos a None por seguridad.
+        # Si en sesión existe un perfil de prueba (dev), úsalo sin consultar Supabase.
+        profile_override = session.get('profile_data')
+        if profile_override:
+            g.profile = profile_override
+            return
+
         user_info = session.get('user')
         
         if user_info and 'id' in user_info:
@@ -126,3 +142,12 @@ def register_template_filters(app):
         except (ValueError, TypeError):
             # Si el dato no es una fecha válida, lo devolvemos como está para no romper la página.
             return value
+
+    # Context processor para exponer algunas variables de configuración a las plantillas
+    @app.context_processor
+    def inject_supabase_config():
+        # Solo inyectamos las variables, no crearemos ningún valor secreto aquí.
+        return {
+            'SUPABASE_URL': app.config.get('SUPABASE_URL'),
+            'SUPABASE_ANON_KEY': app.config.get('SUPABASE_ANON_KEY')
+        }

@@ -11,12 +11,17 @@
             <p>Receta para: <strong>Nombre del Paciente (ejemplo)</strong></p> 
         </div>
         <div>
-            <!-- --- INICIO DE LA MODIFICACIÓN: BOTÓN DE IMPRIMIR FUNCIONAL --- -->
-            <!-- Le he añadido un id="printButton" para que el script lo encuentre -->
-            <button id="printButton" class="btn btn-primary">
-                <i class="fas fa-print me-2"></i>Imprimir Receta
-            </button>
-            <!-- --- FIN DE LA MODIFICACIÓN --- -->
+            <div class="d-flex gap-2">
+                {% if patient and patient.user_id %}
+                    <a href="{{ url_for('chat.conversation', other_user_id=patient.user_id) }}" class="btn btn-outline-secondary">Abrir chat con paciente</a>
+                {% endif %}
+                <!-- --- INICIO DE LA MODIFICACIÓN: BOTÓN DE IMPRIMIR FUNCIONAL --- -->
+                <!-- Le he añadido un id="printButton" para que el script lo encuentre -->
+                <button id="printButton" class="btn btn-primary">
+                    <i class="fas fa-print me-2"></i>Imprimir Receta
+                </button>
+                <!-- --- FIN DE LA MODIFICACIÓN --- -->
+            </div>
         </div>
     </header>
 
