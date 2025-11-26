@@ -15,6 +15,8 @@ from ..models.promoción import Promotion
 
 admin_bp = Blueprint('admin', __name__)
 
+from ..llm_client import call_llm
+
 # --- GESTIÓN DE DASHBOARD Y USUARIOS (SIN CAMBIOS) ---
 @admin_bp.route('/dashboard')
 @role_required(allowed_roles=['administrador'])
@@ -340,6 +342,26 @@ def edit_promotion(promo_id):
 @role_required(allowed_roles=['administrador'])
 def settings():
     return render_template('admin/settings.html')
+
+
+@admin_bp.route('/assistant')
+@role_required(allowed_roles=['administrador'])
+def assistant():
+    """Admin LLM assistant UI page."""
+    return render_template('admin/assistant.html')
+
+
+@admin_bp.route('/assistant/api', methods=['POST'])
+@role_required(allowed_roles=['administrador'])
+def assistant_api():
+    data = request.get_json() or {}
+    prompt = data.get('message') or ''
+    if not prompt:
+        return jsonify({'ok': False, 'response': 'No message provided.'}), 400
+
+    result = call_llm(prompt)
+    status_code = 200 if result.get('ok') else 503
+    return jsonify(result), status_code
 
 @admin_bp.route('/settings/update-profile', methods=['POST'])
 @role_required(allowed_roles=['administrador'])
