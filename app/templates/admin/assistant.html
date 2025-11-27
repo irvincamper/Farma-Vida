@@ -108,7 +108,6 @@
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
             micBtn.style.display = 'none';
-            // Mensaje más explícito para el usuario
             setStatus('ERROR: El reconocimiento de voz no está soportado.', 'danger'); 
             return null;
         }
@@ -161,9 +160,7 @@
         if (isListening) {
             try {
                 recognition.stop(); 
-            } catch(e) {
-                // Ignorar si ya estaba detenido
-            }
+            } catch(e) {}
         }
         
         isListening = false;
@@ -181,11 +178,9 @@
 
     // --- INICIALIZACIÓN DE RECONOCIMIENTO Y ASIGNACIÓN DE HANDLERS ---
     
-    // 1. Inicializar el objeto de reconocimiento
     recognition = initSpeechRecognition();
     
     if (recognition) {
-        // 2. Asignar todos los manejadores de eventos del objeto de reconocimiento
         recognition.onresult = function(event) {
             clearTimeout(speechTimeout); 
             let interimTranscript = '';
@@ -237,7 +232,7 @@
         if (isListening) {
             stopListening(true); 
         } else {
-            startListening(); // Esto internamente verifica si 'recognition' existe.
+            startListening();
         }
     });
 
@@ -251,7 +246,7 @@
     
     // Inicializar el estado de la aplicación
     if (!recognition) {
-        // No hay necesidad de cambiar el status si ya lo hizo initSpeechRecognition
+        // El status ya fue configurado por initSpeechRecognition
     } else {
         setStatus('Listo');
     }

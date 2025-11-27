@@ -38,10 +38,12 @@ def call_llm(
 
         # 5. Configurar la Instrucción del Sistema y el Contenido de la Solicitud
         
-        # A. INSTRUCCIÓN MEJORADA (Nombre cambiado a 'Cuida Mas')
+        # A. INSTRUCCIÓN MEJORADA para priorizar datos factuales
         system_instruction = (
             'Eres un asistente experto en información general farmacéutica y en la administración del sistema **Cuida Mas**. '
-            'Responde de forma profesional, precisa y concisa. **Nunca ofrezcas consejos médicos ni diagnósticos; solo proporciona información general y factual.**'
+            'Tu principal prioridad es responder a preguntas sobre conteos y métricas utilizando **EXCLUSIVAMENTE** la información provista en el "CONTEXTO DE LA BASE DE DATOS" si está disponible. '
+            'Responde de forma profesional, precisa y concisa, dando los números exactos directamente, sin mencionar los pasos o módulos del sistema. '
+            '**Nunca ofrezcas consejos médicos ni diagnósticos; solo proporciona información general y factual.**'
         )
         
         # B. CONSTRUCCIÓN DEL PROMPT (Integra el contexto de la DB)
@@ -66,7 +68,7 @@ def call_llm(
         text = ''
         
         if completion.candidates and completion.candidates[0].finish_reason.name == 'SAFETY':
-             text = "Lo siento, mi respuesta fue bloqueada por las políticas de seguridad de contenido. Intenta reformular tu pregunta."
+            text = "Lo siento, mi respuesta fue bloqueada por las políticas de seguridad de contenido. Intenta reformular tu pregunta."
         elif completion.text:
             text = completion.text
         else:
