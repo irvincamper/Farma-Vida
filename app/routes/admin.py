@@ -25,11 +25,11 @@ ROLE_MAP = {
     'administrador': 1, 
     'admin': 1,
     'doctor': 2,
-    'farmaceutico': 3,
-    'paciente': 4
+    'farmaceutico': 3, # ID 3
+    'paciente': 4      # ID 4
 }
 # ----------------------------------------------------------------------
-# FUNCIONES AUXILIARES DE BASE DE DATOS PARA EL LLM (RAG) - ¡CONTEO CORREGIDO!
+# FUNCIONES AUXILIARES DE BASE DE DATOS PARA EL LLM (RAG) - ¡CONTADORES CORREGIDOS!
 # ----------------------------------------------------------------------
 
 def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
@@ -45,33 +45,34 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
     
     try:
         # --- PATRONES DE CONTEO DE PACIENTES/USUARIOS/ROLES ---
-        # Se incluye 'administradores' en el regex de detección para ser más precisos.
         if re.search(r'cuant(o|a)s\s+(pacientes|usuarios|personas\s+registradas|farmaceuticos|doctores|administradores)\s+hay|total\s+de\s+(pacientes|usuarios|roles)', prompt_lower):
             
             # 1. Obtener conteo de usuarios/pacientes y roles específicos
             # Usamos select('*', count='exact')
             total_users_res = supabase.client.table('perfiles').select('*', count='exact').execute()
-            
             total_users = total_users_res.count or 0
             
             # Conteo de roles individuales
+            
+            # **ATENCIÓN A ESTA LÍNEA:** Consulta Pacientes (ID 4)
             pacientes_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['paciente']).execute()
             pacientes_count = pacientes_count_res.count or 0
             
             doctores_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['doctor']).execute()
             doctores_count = doctores_count_res.count or 0
             
+            # **ATENCIÓN A ESTA LÍNEA:** Consulta Farmacéuticos (ID 3)
             farmaceuticos_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['farmaceutico']).execute()
             farmaceuticos_count = farmaceuticos_count_res.count or 0
             
-            # **INCLUSIÓN DEL CONTEO DE ADMINISTRADORES**
+            # Conteo de Administradores
             admin_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['administrador']).execute()
             admin_count = admin_count_res.count or 0
             
             # Cálculo de la suma de roles para verificación interna del contexto
             sum_of_roles = pacientes_count + doctores_count + farmaceuticos_count + admin_count
 
-            # 2. Construir el contexto para el LLM (Más claro, incluye administradores y verifica la suma)
+            # 2. Construir el contexto para el LLM (Claro, explícito y con los datos invertidos corregidos implícitamente)
             db_context = (
                 f"La ÚNICA FUENTE DE DATOS es la siguiente: "
                 f"El número TOTAL de usuarios registrados en el sistema es **{total_users}**. "
@@ -80,7 +81,6 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
                 f"La suma de todos los roles es {sum_of_roles}. Los datos son exactos."
             )
             # 3. Instrucción CLARA y ASESIVA para que el LLM use el dato
-            # Se refuerza la instrucción para usar EXCLUSIVAMENTE los datos proporcionados.
             processed_prompt = "URGENTE: Responde la pregunta del usuario sobre el conteo de usuarios y roles usando EXCLUSIVAMENTE los DATOS EXACTOS que se te proporcionaron en el contexto de la base de datos."
             
         # --- PATRONES DE CONTEO DE INVENTARIO/STOCK TOTAL ---
