@@ -21,9 +21,8 @@ from ..llm_client import call_llm
 admin_bp = Blueprint('admin', __name__)
 
 # --- Mapeo de Roles a IDs (Añadido para RAG) ---
-# Esto hace que el RAG sea más inteligente al buscar roles específicos.
 ROLE_MAP = {
-    'administrador': 1,
+    'administrador': 1, 
     'admin': 1,
     'doctor': 2,
     'farmaceutico': 3,
@@ -46,16 +45,16 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
     
     try:
         # --- PATRONES DE CONTEO DE PACIENTES/USUARIOS/ROLES ---
-        # Detecta: ¿cuántos pacientes hay?, ¿total de usuarios?, ¿cuántos doctores?, ¿cuántos farmacéuticos?
-        if re.search(r'cuant(o|a)s\s+(pacientes|usuarios|personas\s+registradas|farmaceuticos|doctores)\s+hay|total\s+de\s+(pacientes|usuarios|roles)', prompt_lower):
+        # Se incluye 'administradores' en el regex de detección para ser más precisos.
+        if re.search(r'cuant(o|a)s\s+(pacientes|usuarios|personas\s+registradas|farmaceuticos|doctores|administradores)\s+hay|total\s+de\s+(pacientes|usuarios|roles)', prompt_lower):
             
             # 1. Obtener conteo de usuarios/pacientes y roles específicos
-            # CORRECCIÓN: Usamos select('*', count='exact') en lugar de select('id', count='exact')
+            # Usamos select('*', count='exact')
             total_users_res = supabase.client.table('perfiles').select('*', count='exact').execute()
             
             total_users = total_users_res.count or 0
             
-            # Conteo de roles importantes (corregido con select('*'))
+            # Conteo de roles individuales
             pacientes_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['paciente']).execute()
             pacientes_count = pacientes_count_res.count or 0
             
@@ -65,27 +64,33 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
             farmaceuticos_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['farmaceutico']).execute()
             farmaceuticos_count = farmaceuticos_count_res.count or 0
             
-            # 2. Construir el contexto para el LLM
+            # **INCLUSIÓN DEL CONTEO DE ADMINISTRADORES**
+            admin_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['administrador']).execute()
+            admin_count = admin_count_res.count or 0
+            
+            # Cálculo de la suma de roles para verificación interna del contexto
+            sum_of_roles = pacientes_count + doctores_count + farmaceuticos_count + admin_count
+
+            # 2. Construir el contexto para el LLM (Más claro, incluye administradores y verifica la suma)
             db_context = (
-                f"El número total de usuarios registrados en el sistema es **{total_users}**. "
-                f"Conteo detallado de roles: Pacientes={pacientes_count}, Doctores={doctores_count}, Farmacéuticos={farmaceuticos_count}. "
-                f"La suma de roles ({pacientes_count} + {doctores_count} + {farmaceuticos_count}) es {pacientes_count + doctores_count + farmaceuticos_count}."
+                f"La ÚNICA FUENTE DE DATOS es la siguiente: "
+                f"El número TOTAL de usuarios registrados en el sistema es **{total_users}**. "
+                f"El conteo DETALLADO por roles es: **Administradores={admin_count}**, **Pacientes={pacientes_count}**, "
+                f"**Doctores={doctores_count}**, **Farmacéuticos={farmaceuticos_count}**. "
+                f"La suma de todos los roles es {sum_of_roles}. Los datos son exactos."
             )
             # 3. Instrucción CLARA y ASESIVA para que el LLM use el dato
-            # El prompt se convierte en una instrucción forzada para el LLM.
-            processed_prompt = "URGENTE: Usa EXCLUSIVAMENTE el CONTEXTO DE LA BASE DE DATOS proporcionado para responder la pregunta del usuario sobre el conteo de usuarios y roles de forma amigable."
+            # Se refuerza la instrucción para usar EXCLUSIVAMENTE los datos proporcionados.
+            processed_prompt = "URGENTE: Responde la pregunta del usuario sobre el conteo de usuarios y roles usando EXCLUSIVAMENTE los DATOS EXACTOS que se te proporcionaron en el contexto de la base de datos."
             
         # --- PATRONES DE CONTEO DE INVENTARIO/STOCK TOTAL ---
         elif re.search(r'(stock|unidades)\s+total|suma\s+de\s+productos|cuantas\s+unidades\s+hay\s+en\s+total|inventario\s+actual|cuantos\s+medicamentos', prompt_lower):
             
             # 1. Obtener conteo de inventario y el total de stock
-            # CORRECCIÓN: Usamos select('*', count='exact')
             meds_count_res = supabase.client.table('inventario').select('*', count='exact').execute()
-            # Asumiendo que 'get_total_stock' retorna el total combinado de la columna 'stock' de inventario
             total_stock_res = supabase.client.rpc('get_total_stock').execute() 
             
             meds_count = meds_count_res.count or 0
-            # Convertimos a entero para evitar problemas de tipos si no es None
             total_stock = int(total_stock_res.data[0]['total_stock']) if total_stock_res and total_stock_res.data and total_stock_res.data[0].get('total_stock') is not None else 0
             
             # 2. Construir el contexto para el LLM
@@ -94,7 +99,6 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
                 f"El stock total combinado de todas las unidades es {total_stock}."
             )
             # 3. Instrucción CLARA y ASESIVA para que el LLM use el dato
-            # El prompt se convierte en una instrucción forzada para el LLM.
             processed_prompt = "URGENTE: Usa EXCLUSIVAMENTE el CONTEXTO DE LA BASE DE DATOS proporcionado para responder la pregunta del usuario sobre el inventario actual y el stock total combinado."
 
         # --- RECHAZO DE BÚSQUEDA ESPECÍFICA ---
@@ -114,7 +118,7 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
     return db_context, processed_prompt
 
 # ----------------------------------------------------------------------
-# RUTAS DE ADMINISTRADOR
+# RUTAS DE ADMINISTRADOR (El resto del código permanece igual)
 # ----------------------------------------------------------------------
 
 @admin_bp.route('/dashboard')
@@ -425,7 +429,7 @@ def assistant():
     """Admin LLM assistant UI page. Se pasa el nombre del usuario para personalizar."""
     # OBTENEMOS EL NOMBRE DEL USUARIO DE g.profile (asumiendo que g se carga correctamente)
     user_name = g.profile.get('nombre_completo', 'Administrador') 
-    return render_template('admin/assistant.html', user_name=user_name) # Se incluye el nombre del usuario
+    return render_template('admin/assistant.html', user_name=user_name) 
 
 @admin_bp.route('/assistant/api', methods=['POST'])
 @role_required(allowed_roles=['administrador'])
