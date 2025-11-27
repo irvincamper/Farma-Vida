@@ -1,4 +1,3 @@
-# app/routes/admin.py
 from flask import Blueprint, render_template, g, flash, request, redirect, url_for, jsonify
 import csv
 from io import StringIO
@@ -20,16 +19,17 @@ from ..llm_client import call_llm
 
 admin_bp = Blueprint('admin', __name__)
 
-# --- Mapeo de Roles a IDs (Añadido para RAG) ---
+# --- Mapeo de Roles a IDs (CORREGIDO) ---
+# Se invierten los IDs 3 y 4 para que coincida con: Pacientes (ID 3 = 26), Farmacéuticos (ID 4 = 2).
 ROLE_MAP = {
     'administrador': 1, 
     'admin': 1,
     'doctor': 2,
-    'farmaceutico': 3, # ID 3
-    'paciente': 4      # ID 4
+    'paciente': 3,       # <-- CORREGIDO: ID 3
+    'farmaceutico': 4,   # <-- CORREGIDO: ID 4
 }
 # ----------------------------------------------------------------------
-# FUNCIONES AUXILIARES DE BASE DE DATOS PARA EL LLM (RAG) - ¡CONTADORES CORREGIDOS!
+# FUNCIONES AUXILIARES DE BASE DE DATOS PARA EL LLM (RAG)
 # ----------------------------------------------------------------------
 
 def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
@@ -48,20 +48,16 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
         if re.search(r'cuant(o|a)s\s+(pacientes|usuarios|personas\s+registradas|farmaceuticos|doctores|administradores)\s+hay|total\s+de\s+(pacientes|usuarios|roles)', prompt_lower):
             
             # 1. Obtener conteo de usuarios/pacientes y roles específicos
-            # Usamos select('*', count='exact')
             total_users_res = supabase.client.table('perfiles').select('*', count='exact').execute()
             total_users = total_users_res.count or 0
             
-            # Conteo de roles individuales
-            
-            # **ATENCIÓN A ESTA LÍNEA:** Consulta Pacientes (ID 4)
+            # Conteo de roles individuales usando el ROLE_MAP corregido
             pacientes_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['paciente']).execute()
             pacientes_count = pacientes_count_res.count or 0
             
             doctores_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['doctor']).execute()
             doctores_count = doctores_count_res.count or 0
             
-            # **ATENCIÓN A ESTA LÍNEA:** Consulta Farmacéuticos (ID 3)
             farmaceuticos_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['farmaceutico']).execute()
             farmaceuticos_count = farmaceuticos_count_res.count or 0
             
@@ -69,10 +65,10 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
             admin_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['administrador']).execute()
             admin_count = admin_count_res.count or 0
             
-            # Cálculo de la suma de roles para verificación interna del contexto
+            # Cálculo de la suma de roles
             sum_of_roles = pacientes_count + doctores_count + farmaceuticos_count + admin_count
 
-            # 2. Construir el contexto para el LLM (Claro, explícito y con los datos invertidos corregidos implícitamente)
+            # 2. Construir el contexto para el LLM (Claro y explícito)
             db_context = (
                 f"La ÚNICA FUENTE DE DATOS es la siguiente: "
                 f"El número TOTAL de usuarios registrados en el sistema es **{total_users}**. "
@@ -118,16 +114,16 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
     return db_context, processed_prompt
 
 # ----------------------------------------------------------------------
-# RUTAS DE ADMINISTRADOR (El resto del código permanece igual)
+# RUTAS DE ADMINISTRADOR
 # ----------------------------------------------------------------------
 
 @admin_bp.route('/dashboard')
 @role_required(allowed_roles=['administrador'])
 def dashboard():
     try:
-        # Se mantiene el conteo simple en dashboard, pero si da problemas, aplicar la misma corrección
+        # Usamos los IDs del ROLE_MAP para consistencia, aunque aquí solo se necesiten para doctor (ID 2)
         user_count_res = supabase.client.table('perfiles').select('id', count='exact').execute()
-        doctor_count_res = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', 2).execute()
+        doctor_count_res = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', ROLE_MAP['doctor']).execute()
         meds_count_res = supabase.client.table('inventario').select('id', count='exact').execute()
         stats = {
             'total_users': user_count_res.count or 0,
@@ -149,6 +145,7 @@ def manage_users():
     q = (request.args.get('q') or '').strip().lower()
     order = (request.args.get('order') or 'asc').lower()
 
+    # Mapeo de prioridad para ordenar en la vista
     role_priority = {
         'administrador': 1,
         'doctor': 2,
