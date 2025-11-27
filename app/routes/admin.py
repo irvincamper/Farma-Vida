@@ -4,8 +4,8 @@ import csv
 from io import StringIO
 from flask import Response
 from datetime import datetime
-import re # Importación para el análisis de texto (RAG)
-from typing import Optional # Para tipado de funciones
+import re
+from typing import Optional
 
 from ..decorators import role_required
 from ..extensions import supabase
@@ -20,49 +20,59 @@ admin_bp = Blueprint('admin', __name__)
 # Importamos la función LLM mejorada que acepta el contexto de la base de datos
 from ..llm_client import call_llm
 
+# --- Mapeo de Roles a IDs (Añadido para RAG) ---
+# Esto hace que el RAG sea más inteligente al buscar roles específicos.
+ROLE_MAP = {
+    'administrador': 1,
+    'admin': 1,
+    'doctor': 2,
+    'farmaceutico': 3,
+    'paciente': 4
+}
 # ----------------------------------------------------------------------
-# FUNCIONES AUXILIARES DE BASE DE DATOS PARA EL LLM (RAG) - ¡CORREGIDO!
+# FUNCIONES AUXILIARES DE BASE DE DATOS PARA EL LLM (RAG) - ¡VERSIÓN FINAL!
 # ----------------------------------------------------------------------
 
 def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
     """
-    Analiza el prompt del usuario y extrae los datos de la DB si es necesario (lógica RAG).
+    Analiza el prompt del usuario y extrae los datos de la DB si es necesario (lógica RAG mejorada).
     
     Returns: (db_context: str | None, processed_prompt: str)
     """
     
     prompt_lower = prompt.lower().strip()
     db_context = None
-    processed_prompt = prompt # Por defecto, el prompt no se modifica
+    processed_prompt = prompt 
     
     try:
-        # --- PATRONES DE CONTEO DE PACIENTES/USUARIOS (MEJORADO) ---
-        # Patrón que detecta: ¿cuántos pacientes hay?, ¿total de usuarios?, ¿cuántas personas registradas hay?
-        if re.search(r'cuant(o|a)s\s+(pacientes|usuarios|personas\s+registradas)\s+hay|total\s+de\s+(pacientes|usuarios)', prompt_lower):
+        # --- PATRONES DE CONTEO DE PACIENTES/USUARIOS/ROLES (MEJORADO) ---
+        # Detecta: ¿cuántos pacientes hay?, ¿total de usuarios?, ¿cuántos doctores?, ¿cuántos farmacéuticos?
+        if re.search(r'cuant(o|a)s\s+(pacientes|usuarios|personas\s+registradas|farmaceuticos|doctores)\s+hay|total\s+de\s+(pacientes|usuarios|roles)', prompt_lower):
             
-            # 1. Obtener conteo de usuarios/pacientes
+            # 1. Obtener conteo de usuarios/pacientes y roles específicos
             total_users_res = supabase.client.table('perfiles').select('id', count='exact').execute()
-            # Asumimos que el ID de rol 4 es 'paciente'
-            pacientes_res = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', 4).execute()
             
             total_users = total_users_res.count or 0
-            pacientes_count = pacientes_res.count or 0
+            
+            # Conteo de roles importantes
+            pacientes_count = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', ROLE_MAP['paciente']).execute().count or 0
+            doctores_count = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', ROLE_MAP['doctor']).execute().count or 0
+            farmaceuticos_count = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', ROLE_MAP['farmaceutico']).execute().count or 0
             
             # 2. Construir el contexto para el LLM
             db_context = (
                 f"El número total de usuarios registrados en el sistema es {total_users}. "
-                f"El número total de pacientes registrados (rol 4) es {pacientes_count}."
+                f"Conteo detallado de roles: Pacientes={pacientes_count}, Doctores={doctores_count}, Farmacéuticos={farmaceuticos_count}."
             )
             # 3. Instrucción CLARA y ASESIVA para que el LLM use el dato
-            processed_prompt = "URGENTE: Usa EXCLUSIVAMENTE el CONTEXTO DE LA BASE DE DATOS proporcionado para responder la pregunta del usuario sobre el conteo de pacientes y usuarios de forma amigable."
+            processed_prompt = "URGENTE: Usa EXCLUSIVAMENTE el CONTEXTO DE LA BASE DE DATOS proporcionado para responder la pregunta del usuario sobre el conteo de usuarios y roles de forma amigable."
             
-        # --- PATRONES DE CONTEO DE INVENTARIO/STOCK TOTAL (MEJORADO) ---
-        # Patrón que detecta: ¿stock total?, ¿suma de productos?, ¿cuantas unidades hay en total?
+        # --- PATRONES DE CONTEO DE INVENTARIO/STOCK TOTAL ---
         elif re.search(r'(stock|unidades)\s+total|suma\s+de\s+productos|cuantas\s+unidades\s+hay\s+en\s+total|inventario\s+actual', prompt_lower):
             
             # 1. Obtener conteo de inventario y el total de stock
             meds_count_res = supabase.client.table('inventario').select('id', count='exact').execute()
-            total_stock_res = supabase.client.rpc('get_total_stock').execute() # Asumiendo que esta función RPC existe
+            total_stock_res = supabase.client.rpc('get_total_stock').execute() 
             
             meds_count = meds_count_res.count or 0
             total_stock = total_stock_res.data[0]['total_stock'] if total_stock_res and total_stock_res.data else 0
@@ -76,32 +86,27 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
             processed_prompt = "URGENTE: Usa EXCLUSIVAMENTE el CONTEXTO DE LA BASE DE DATOS proporcionado para responder la pregunta del usuario sobre el inventario actual y el stock total combinado."
 
         # --- RECHAZO DE BÚSQUEDA ESPECÍFICA (Nombre del sistema actualizado) ---
-        elif re.search(r'informacion\s+de\s+(irvin|carlos\s+perez)', prompt_lower):
-            # Para preguntas que requieren búsqueda compleja, se puede forzar un rechazo elegante
+        elif re.search(r'informacion\s+de\s+(irvin|carlos\s+perez|persona)', prompt_lower):
             db_context = "El LLM no está configurado para buscar información detallada de usuarios individuales por seguridad. Solo puede dar estadísticas generales."
-            # Nombre 'Cuida Mas' actualizado
             processed_prompt = "El usuario está pidiendo información detallada de una persona, explica amablemente por qué no puedes proporcionar ese dato por seguridad en el sistema Cuida Mas."
         
         else:
-            # Pregunta de conocimiento general (ej: paracetamol, tos)
             processed_prompt = prompt
 
     except Exception as e:
-        # En caso de error de Supabase/DB, informamos al LLM de forma segura
-        db_context = f"Error al consultar la base de datos: {str(e)}. NO USES ESTE ERROR EN LA RESPUESTA FINAL. Responde que hubo un problema técnico y que intente más tarde."
-        processed_prompt = prompt
+        # Manejo de error de DB mejorado: da una respuesta amigable en lugar de un error técnico
+        db_context = "Se produjo un error técnico irrecuperable al intentar acceder a las estadísticas de la base de datos."
+        processed_prompt = "El usuario ha preguntado por estadísticas, pero se ha producido un error técnico. Responde de forma amable, indicando que el sistema tiene un problema temporal para acceder a los datos, y que intente más tarde."
         
     return db_context, processed_prompt
 
 # ----------------------------------------------------------------------
-# RUTA DEL ASISTENTE LLM Y OTRAS RUTAS DEL ADMIN (SIN CAMBIOS)
+# EL RESTO DE LAS RUTAS SE MANTIENE SIN CAMBIOS
 # ----------------------------------------------------------------------
 
-# --- GESTIÓN DE DASHBOARD Y USUARIOS ---
 @admin_bp.route('/dashboard')
 @role_required(allowed_roles=['administrador'])
 def dashboard():
-    # ... (código sin cambios)
     try:
         user_count_res = supabase.client.table('perfiles').select('id', count='exact').execute()
         doctor_count_res = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', 2).execute()
@@ -119,17 +124,13 @@ def dashboard():
 @admin_bp.route('/users')
 @role_required(allowed_roles=['administrador'])
 def manage_users():
-    # ... (código sin cambios)
     admin_handler = Admin()
     users_list, error = admin_handler.get_all_users_with_roles()
     if error:
         flash("Error al cargar la lista de usuarios.", "danger")
-    # --- FILTRADO Y ORDENACIÓN PERSONALIZADA ---
-    # Parámetros de consulta: q (texto a buscar), order (asc|desc)
     q = (request.args.get('q') or '').strip().lower()
     order = (request.args.get('order') or 'asc').lower()
 
-    # Prioridad de roles: administrador, doctor, farmaceutico, paciente
     role_priority = {
         'administrador': 1,
         'doctor': 2,
@@ -137,11 +138,9 @@ def manage_users():
         'paciente': 4
     }
 
-    # Safety: ensure we have a list
     if not users_list:
         users_list = []
 
-    # Filter by search query (buscar por nombre completo o email)
     if q:
         def matches_query(u):
             name = (u.get('nombre_completo') or '').lower()
@@ -149,7 +148,6 @@ def manage_users():
             return q in name or q in email
         users_list = [u for u in users_list if matches_query(u)]
 
-    # Sorting: first by role priority, then alphabetically by nombre_completo
     def sort_key(u):
         role_name = ''
         try:
@@ -187,7 +185,6 @@ def create_user():
         
         if error:
             flash(f'Error al crear usuario: {error}', 'danger')
-            # keep the entered values so the admin can correct them without retyping
             return render_template('admin/create_user_form.html', nombre_completo=full_name, email=email, id_de_rol=role_id)
         else:
             flash(f'Usuario "{full_name}" creado con éxito.', 'success')
@@ -231,7 +228,6 @@ def delete_user(user_id):
     
     return redirect(url_for('admin.manage_users'))
 
-# --- SECCIÓN DE INVENTARIO CORREGIDA Y UNIFICADA ---
 @admin_bp.route('/inventory')
 @role_required(allowed_roles=['administrador'])
 def inventory():
@@ -245,14 +241,12 @@ def inventory():
     if inv_error or cat_error or prov_error:
         flash("Error al cargar datos del inventario.", "danger")
         
-    # --- FILTRADO Y ORDENACIÓN PARA INVENTARIO ---
     q = (request.args.get('q') or '').strip().lower()
     order = (request.args.get('order') or 'asc').lower()
 
     if not inventory_list:
         inventory_list = []
 
-    # Search by name or category or provider
     if q:
         def matches_inv(it):
             name = (it.get('nombre') or '').lower()
@@ -261,7 +255,6 @@ def inventory():
             return q in name or q in (cat or '').lower() or q in (prov or '').lower()
         inventory_list = [it for it in inventory_list if matches_inv(it)]
 
-    # Sort by name
     inventory_list.sort(key=lambda it: (it.get('nombre') or '').lower(), reverse=(order == 'desc'))
 
     return render_template('admin/inventory.html', 
@@ -270,25 +263,20 @@ def inventory():
                             providers=providers_list or [],
                             q=(q or ''), order=order)
 
-# RUTA UNIFICADA PARA AÑADIR CUALQUIER ITEM AL INVENTARIO
 @admin_bp.route('/inventory/add', methods=['POST'])
 @role_required(allowed_roles=['administrador', 'farmaceutico'])
 def add_inventory_item():
     data = request.get_json()
     pharma_handler = Pharmacist()
-    # Llamamos a la nueva función unificada del modelo
     _, error = pharma_handler.add_inventory_item(data.get('name'), data.get('stock'), data.get('category_id'))
     
     if error: 
         return jsonify({'success': False, 'message': str(error)}), 400
     return jsonify({'success': True, 'message': 'Item añadido al inventario con éxito.'})
 
-# La ruta '/inventory/add-supply' y 'add_medicine' se eliminan y se reemplazan por la de arriba.
-
 @admin_bp.route('/inventory/restock', methods=['POST'])
 @role_required(allowed_roles=['administrador', 'farmaceutico'])
 def restock_inventory():
-    # ... (código sin cambios)
     data = request.get_json()
     med_id = data.get('id')
     quantity = data.get('quantity')
@@ -301,7 +289,6 @@ def restock_inventory():
 @admin_bp.route('/inventory/export')
 @role_required(allowed_roles=['administrador'])
 def export_inventory():
-    # ... (código sin cambios)
     pharma_handler = Pharmacist()
     inventory_list, error = pharma_handler.get_filtered_inventory()
     if error or not inventory_list:
@@ -319,7 +306,6 @@ def export_inventory():
         headers={"Content-disposition": "attachment; filename=inventario.csv"}
     )
 
-# --- OTRAS RUTAS (SIN CAMBIOS) ---
 @admin_bp.route('/reports')
 @role_required(allowed_roles=['administrador'])
 def reports():
@@ -329,7 +315,6 @@ def reports():
 @role_required(allowed_roles=['administrador'])
 def promotions():
     promotions_list = []
-    # search and order
     q = (request.args.get('q') or '').strip().lower()
     order = (request.args.get('order') or 'asc').lower()
 
@@ -348,11 +333,9 @@ def promotions():
     except Exception as e:
         flash(f"Error al obtener promociones: {e}", "danger")
         
-    # filter by query (titulo or descripcion)
     if q:
         promotions_list = [p for p in promotions_list if q in (p.get('titulo','') or '').lower() or q in (p.get('descripcion','') or '').lower()]
 
-    # sort by title
     promotions_list.sort(key=lambda p: (p.get('titulo') or '').lower(), reverse=(order == 'desc'))
 
     return render_template('admin/promotions.html', promotions=promotions_list, now=datetime.utcnow(), q=(q or ''), order=order)
