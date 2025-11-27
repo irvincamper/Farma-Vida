@@ -19,14 +19,13 @@ from ..llm_client import call_llm
 
 admin_bp = Blueprint('admin', __name__)
 
-# --- Mapeo de Roles a IDs (CORREGIDO) ---
-# Se invierten los IDs 3 y 4 para que coincida con: Pacientes (ID 3 = 26), Farmacéuticos (ID 4 = 2).
+# --- Mapeo de Roles a IDs (CORREGIDO PARA COINCIDIR CON TUS DATOS REALES) ---
 ROLE_MAP = {
     'administrador': 1, 
     'admin': 1,
     'doctor': 2,
-    'paciente': 3,       # <-- CORREGIDO: ID 3
-    'farmaceutico': 4,   # <-- CORREGIDO: ID 4
+    'paciente': 3,       # Pacientes tienen el ID 3 (26 usuarios)
+    'farmaceutico': 4,   # Farmacéuticos tienen el ID 4 (2 usuarios)
 }
 # ----------------------------------------------------------------------
 # FUNCIONES AUXILIARES DE BASE DE DATOS PARA EL LLM (RAG)
@@ -45,9 +44,11 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
     
     try:
         # --- PATRONES DE CONTEO DE PACIENTES/USUARIOS/ROLES ---
+        # Si pregunta por cualquier tipo de conteo de usuarios/roles:
         if re.search(r'cuant(o|a)s\s+(pacientes|usuarios|personas\s+registradas|farmaceuticos|doctores|administradores)\s+hay|total\s+de\s+(pacientes|usuarios|roles)', prompt_lower):
             
             # 1. Obtener conteo de usuarios/pacientes y roles específicos
+            # Usamos select('*', count='exact')
             total_users_res = supabase.client.table('perfiles').select('*', count='exact').execute()
             total_users = total_users_res.count or 0
             
@@ -84,6 +85,7 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
             
             # 1. Obtener conteo de inventario y el total de stock
             meds_count_res = supabase.client.table('inventario').select('*', count='exact').execute()
+            # Aseguramos que si la llamada RPC falla, los valores por defecto sean 0
             total_stock_res = supabase.client.rpc('get_total_stock').execute() 
             
             meds_count = meds_count_res.count or 0
@@ -106,22 +108,22 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
             processed_prompt = prompt
 
     except Exception as e:
-        # Manejo de error de DB mejorado: da una respuesta amigable en lugar de un error técnico
+        # Manejo de error de DB mejorado: si la conexión falla, se informa
         print(f"Error en RAG: {e}")
-        db_context = "Se produjo un error técnico irrecuperable al intentar acceder a las estadísticas de la base de datos."
-        processed_prompt = "El usuario ha preguntado por estadísticas, pero se ha producido un error técnico. Responde de forma amable, indicando que el sistema tiene un problema temporal para acceder a los datos, y que intente más tarde."
+        db_context = None 
+        # Esta es la parte crucial: si hay un error de DB, le decimos al LLM que no tiene datos.
+        processed_prompt = "El usuario ha preguntado por estadísticas. Se ha producido un error al intentar acceder a los datos de la base de datos de Cuida Mas. La respuesta debe ser informar al usuario que el sistema no puede acceder a los datos de la base de datos en este momento y que intente más tarde."
         
     return db_context, processed_prompt
 
 # ----------------------------------------------------------------------
-# RUTAS DE ADMINISTRADOR
+# RUTAS DE ADMINISTRADOR (El resto del código permanece igual)
 # ----------------------------------------------------------------------
 
 @admin_bp.route('/dashboard')
 @role_required(allowed_roles=['administrador'])
 def dashboard():
     try:
-        # Usamos los IDs del ROLE_MAP para consistencia, aunque aquí solo se necesiten para doctor (ID 2)
         user_count_res = supabase.client.table('perfiles').select('id', count='exact').execute()
         doctor_count_res = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', ROLE_MAP['doctor']).execute()
         meds_count_res = supabase.client.table('inventario').select('id', count='exact').execute()
@@ -145,7 +147,6 @@ def manage_users():
     q = (request.args.get('q') or '').strip().lower()
     order = (request.args.get('order') or 'asc').lower()
 
-    # Mapeo de prioridad para ordenar en la vista
     role_priority = {
         'administrador': 1,
         'doctor': 2,
@@ -442,7 +443,7 @@ def assistant_api():
     db_context, prompt_to_llm = get_db_stats_context(user_prompt)
 
     # 2. Llamar al LLM (ahora con el contexto de la DB)
-    result = call_llm(prompt_to_llm, db_context=db_context)
+    result = call_llm(user_prompt=prompt_to_llm, db_context=db_context)
     
     status_code = 200 if result.get('ok') else 503
     return jsonify(result), status_code
