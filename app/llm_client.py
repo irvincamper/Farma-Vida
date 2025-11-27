@@ -49,8 +49,7 @@ def call_llm(prompt: str, model: str = 'gemini-2.5-flash') -> Dict[str, str]:
         )
         
         # 7. Extraer respuesta de Gemini (.text)
-        text = completion.text
-
+        text = completion.text if completion and completion.text else "Lo siento, hubo un problema al generar la respuesta."
         return {'ok': True, 'response': text}
     except Exception as e:
         # Ahora manejará errores de conexión o cuota de Google
