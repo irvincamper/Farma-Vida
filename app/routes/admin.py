@@ -30,7 +30,7 @@ ROLE_MAP = {
     'paciente': 4
 }
 # ----------------------------------------------------------------------
-# FUNCIONES AUXILIARES DE BASE DE DATOS PARA EL LLM (RAG) - ¡VERSIÓN FINAL!
+# FUNCIONES AUXILIARES DE BASE DE DATOS PARA EL LLM (RAG) - ¡CONTEO CORREGIDO!
 # ----------------------------------------------------------------------
 
 def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
@@ -50,18 +50,24 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
         if re.search(r'cuant(o|a)s\s+(pacientes|usuarios|personas\s+registradas|farmaceuticos|doctores)\s+hay|total\s+de\s+(pacientes|usuarios|roles)', prompt_lower):
             
             # 1. Obtener conteo de usuarios/pacientes y roles específicos
-            total_users_res = supabase.client.table('perfiles').select('id', count='exact').execute()
+            # CORRECCIÓN: Usamos select('*', count='exact') en lugar de select('id', count='exact')
+            total_users_res = supabase.client.table('perfiles').select('*', count='exact').execute()
             
             total_users = total_users_res.count or 0
             
-            # Conteo de roles importantes
-            pacientes_count = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', ROLE_MAP['paciente']).execute().count or 0
-            doctores_count = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', ROLE_MAP['doctor']).execute().count or 0
-            farmaceuticos_count = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', ROLE_MAP['farmaceutico']).execute().count or 0
+            # Conteo de roles importantes (corregido con select('*'))
+            pacientes_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['paciente']).execute()
+            pacientes_count = pacientes_count_res.count or 0
+            
+            doctores_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['doctor']).execute()
+            doctores_count = doctores_count_res.count or 0
+            
+            farmaceuticos_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['farmaceutico']).execute()
+            farmaceuticos_count = farmaceuticos_count_res.count or 0
             
             # 2. Construir el contexto para el LLM
             db_context = (
-                f"El número total de usuarios registrados en el sistema es {total_users}. "
+                f"El número total de usuarios registrados en el sistema es **{total_users}**. "
                 f"Conteo detallado de roles: Pacientes={pacientes_count}, Doctores={doctores_count}, Farmacéuticos={farmaceuticos_count}. "
                 f"La suma de roles ({pacientes_count} + {doctores_count} + {farmaceuticos_count}) es {pacientes_count + doctores_count + farmaceuticos_count}."
             )
@@ -73,12 +79,14 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
         elif re.search(r'(stock|unidades)\s+total|suma\s+de\s+productos|cuantas\s+unidades\s+hay\s+en\s+total|inventario\s+actual|cuantos\s+medicamentos', prompt_lower):
             
             # 1. Obtener conteo de inventario y el total de stock
-            meds_count_res = supabase.client.table('inventario').select('id', count='exact').execute()
+            # CORRECCIÓN: Usamos select('*', count='exact')
+            meds_count_res = supabase.client.table('inventario').select('*', count='exact').execute()
             # Asumiendo que 'get_total_stock' retorna el total combinado de la columna 'stock' de inventario
             total_stock_res = supabase.client.rpc('get_total_stock').execute() 
             
             meds_count = meds_count_res.count or 0
-            total_stock = total_stock_res.data[0]['total_stock'] if total_stock_res and total_stock_res.data and total_stock_res.data[0].get('total_stock') is not None else 0
+            # Convertimos a entero para evitar problemas de tipos si no es None
+            total_stock = int(total_stock_res.data[0]['total_stock']) if total_stock_res and total_stock_res.data and total_stock_res.data[0].get('total_stock') is not None else 0
             
             # 2. Construir el contexto para el LLM
             db_context = (
@@ -113,6 +121,7 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
 @role_required(allowed_roles=['administrador'])
 def dashboard():
     try:
+        # Se mantiene el conteo simple en dashboard, pero si da problemas, aplicar la misma corrección
         user_count_res = supabase.client.table('perfiles').select('id', count='exact').execute()
         doctor_count_res = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', 2).execute()
         meds_count_res = supabase.client.table('inventario').select('id', count='exact').execute()
@@ -416,8 +425,7 @@ def assistant():
     """Admin LLM assistant UI page. Se pasa el nombre del usuario para personalizar."""
     # OBTENEMOS EL NOMBRE DEL USUARIO DE g.profile (asumiendo que g se carga correctamente)
     user_name = g.profile.get('nombre_completo', 'Administrador') 
-    return render_template('admin/assistant.html', user_name=user_name) # <--- CAMBIO IMPLEMENTADO AQUÍ
-
+    return render_template('admin/assistant.html', user_name=user_name) # Se incluye el nombre del usuario
 
 @admin_bp.route('/assistant/api', methods=['POST'])
 @role_required(allowed_roles=['administrador'])
