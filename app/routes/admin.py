@@ -31,24 +31,116 @@ ROLE_MAP = {
 # FUNCIONES AUXILIARES DE BASE DE DATOS PARA EL LLM (RAG)
 # ----------------------------------------------------------------------
 
-# --- TEMPORAL: SOLO PARA PRUEBAS ---
 def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
     """
-    DESHABILITADO: Simplemente devuelve el prompt sin hacer llamadas a la DB.
+    Analiza el prompt del usuario y extrae los datos de la DB si es necesario (lógica RAG mejorada).
+    
+    Returns: (db_context: str | None, processed_prompt: str)
     """
+    
     prompt_lower = prompt.lower().strip()
     db_context = None
     processed_prompt = prompt 
+    
+    try:
+        # --- PATRONES DE CONTEO DE PACIENTES/USUARIOS/ROLES ---
+        if re.search(r'cuant(o|a)s\s+(pacientes|usuarios|personas\s+registradas|farmaceuticos|doctores|administradores)\s+hay|total\s+de\s+(pacientes|usuarios|roles)', prompt_lower):
+            
+            # 1. Obtener conteo de usuarios/pacientes y roles específicos
+            total_users_res = supabase.client.table('perfiles').select('*', count='exact').execute()
+            total_users = total_users_res.count or 0
+            
+            # Conteo de roles individuales usando el ROLE_MAP corregido
+            pacientes_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['paciente']).execute()
+            pacientes_count = pacientes_count_res.count or 0
+            
+            doctores_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['doctor']).execute()
+            doctores_count = doctores_count_res.count or 0
+            
+            farmaceuticos_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['farmaceutico']).execute()
+            farmaceuticos_count = farmaceuticos_count_res.count or 0
+            
+            # Conteo de Administradores
+            admin_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['administrador']).execute()
+            admin_count = admin_count_res.count or 0
+            
+            # Cálculo de la suma de roles
+            sum_of_roles = pacientes_count + doctores_count + farmaceuticos_count + admin_count
 
-    # Si pregunta por algo de seguridad, simula el bloqueo
-    if re.search(r'informacion\s+de\s+(irvin|carlos\s+perez|persona)', prompt_lower):
-        db_context = "El LLM no está configurado para buscar información detallada de usuarios individuales por seguridad. Solo puede dar estadísticas generales."
-        processed_prompt = "El usuario está pidiendo información detallada de una persona, explica amablemente por qué no puedes proporcionar ese dato por seguridad en el sistema Cuida Mas."
+            # 2. Construir el contexto para el LLM (Claro y explícito)
+            db_context = (
+                f"La ÚNICA FUENTE DE DATOS es la siguiente: "
+                f"El número TOTAL de usuarios registrados en el sistema es **{total_users}**. "
+                f"El conteo DETALLADO por roles es: **Administradores={admin_count}**, **Pacientes={pacientes_count}**, "
+                f"**Doctores={doctores_count}**, **Farmacéuticos={farmaceuticos_count}**. "
+                f"La suma de todos los roles es {sum_of_roles}. Los datos son exactos."
+            )
+            # 3. Instrucción CLARA y ASESIVA para que el LLM use el dato
+            processed_prompt = "URGENTE: Responde la pregunta del usuario sobre el conteo de usuarios y roles usando EXCLUSIVAMENTE los DATOS EXACTOS que se te proporcionaron en el contexto de la base de datos."
+            
+        # --- PATRONES DE CONTEO DE INVENTARIO/STOCK TOTAL ---
+        elif re.search(r'(stock|unidades)\s+total|suma\s+de\s+productos|cuantas\s+unidades\s+hay\s+en\s+total|inventario\s+actual|cuantos\s+medicamentos', prompt_lower):
+            
+            # 1. Obtener conteo de inventario y el total de stock
+            meds_count_res = supabase.client.table('inventario').select('*', count='exact').execute()
+            # Asume que la función RPC 'get_total_stock' existe y está funcionando
+            total_stock_res = supabase.client.rpc('get_total_stock').execute() 
+            
+            meds_count = meds_count_res.count or 0
+            total_stock = int(total_stock_res.data[0]['total_stock']) if total_stock_res and total_stock_res.data and total_stock_res.data[0].get('total_stock') is not None else 0
+            
+            # 2. Construir el contexto para el LLM
+            db_context = (
+                f"El total de productos/medicamentos diferentes en el inventario es {meds_count}. "
+                f"El stock total combinado de todas las unidades es {total_stock}."
+            )
+            # 3. Instrucción CLARA y ASESIVA para que el LLM use el dato
+            processed_prompt = "URGENTE: Usa EXCLUSIVAMENTE el CONTEXTO DE LA BASE DE DATOS proporcionado para responder la pregunta del usuario sobre el inventario actual y el stock total combinado."
 
-    # Devolvemos el prompt original. SI ESTO FALLA, EL PROBLEMA ES EL LLM.
+        # --- RECHAZO DE BÚSQUEDA ESPECÍFICA ---
+        elif re.search(r'informacion\s+de\s+(irvin|carlos\s+perez|persona)', prompt_lower):
+            db_context = "El LLM no está configurado para buscar información detallada de usuarios individuales por seguridad. Solo puede dar estadísticas generales."
+            processed_prompt = "El usuario está pidiendo información detallada de una persona, explica amablemente por qué no puedes proporcionar ese dato por seguridad en el sistema Cuida Mas."
+        
+        else:
+            processed_prompt = prompt
+
+    except Exception as e:
+        # Manejo de error de DB: Se informa al LLM que no hay datos disponibles
+        print(f"Error en RAG al consultar DB: {e}")
+        db_context = None 
+        processed_prompt = "El usuario ha preguntado por estadísticas. Se ha producido un error al intentar acceder a los datos de la base de datos de Cuida Mas. La respuesta debe ser informar al usuario que el sistema no puede acceder a los datos de la base de datos en este momento y que intente más tarde."
+        
     return db_context, processed_prompt
-# ------------------------------------
 
+# ----------------------------------------------------------------------
+# RUTAS DE ADMINISTRADOR 
+# ----------------------------------------------------------------------
+
+## 🏠 RUTA DASHBOARD (CORRECCIÓN IMPLEMENTADA PARA SOLUCIONAR EL ERROR 500)
+@admin_bp.route('/dashboard')
+@role_required(allowed_roles=['administrador'])
+def dashboard():
+    """Ruta principal del dashboard de administración."""
+    try:
+        # Obteniendo estadísticas para mostrar en el dashboard
+        user_count_res = supabase.client.table('perfiles').select('id', count='exact').execute()
+        doctor_count_res = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', ROLE_MAP['doctor']).execute()
+        meds_count_res = supabase.client.table('inventario').select('id', count='exact').execute()
+        stats = {
+            'total_users': user_count_res.count or 0,
+            'total_doctors': doctor_count_res.count or 0,
+            'total_meds': meds_count_res.count or 0
+        }
+    except Exception as e:
+        # Si falla la conexión a Supabase, proporciona datos predeterminados.
+        flash("Error al obtener las estadísticas del sistema.", "danger")
+        stats = {'total_users': 'N/A', 'total_doctors': 'N/A', 'total_meds': 'N/A'}
+    
+    # Esta ruta completa el endpoint 'admin.dashboard'
+    return render_template('admin/dashboard.html', stats=stats) 
+
+## 👥 RUTAS DE GESTIÓN DE USUARIOS
 @admin_bp.route('/users')
 @role_required(allowed_roles=['administrador'])
 def manage_users():
@@ -156,6 +248,7 @@ def delete_user(user_id):
     
     return redirect(url_for('admin.manage_users'))
 
+## 💊 RUTAS DE INVENTARIO
 @admin_bp.route('/inventory')
 @role_required(allowed_roles=['administrador'])
 def inventory():
@@ -234,6 +327,7 @@ def export_inventory():
         headers={"Content-disposition": "attachment; filename=inventario.csv"}
     )
 
+## 📊 RUTAS DE REPORTES Y PROMOS
 @admin_bp.route('/reports')
 @role_required(allowed_roles=['administrador'])
 def reports():
@@ -327,47 +421,12 @@ def edit_promotion(promo_id):
     
     return render_template('admin/edit_promotion.html', promo=promo)
 
+## ⚙️ RUTAS DE CONFIGURACIÓN Y MANTENIMIENTO
 @admin_bp.route('/settings')
 @role_required(allowed_roles=['administrador'])
 def settings():
     return render_template('admin/settings.html')
 
-
-@admin_bp.route('/assistant')
-@role_required(allowed_roles=['administrador'])
-def assistant():
-    """Admin LLM assistant UI page. Se pasa el nombre del usuario para personalizar."""
-    # OBTENEMOS EL NOMBRE DEL USUARIO DE g.profile (asumiendo que g se carga correctamente)
-    user_name = g.profile.get('nombre_completo', 'Administrador') 
-    return render_template('admin/assistant.html', user_name=user_name) 
-
-@admin_bp.route('/assistant/api', methods=['POST'])
-@role_required(allowed_roles=['administrador'])
-def assistant_api():
-    """Ruta API para el asistente LLM."""
-    data = request.get_json() or {}
-    user_prompt = data.get('message') or ''
-    
-    if not user_prompt:
-        return jsonify({'ok': False, 'response': 'No message provided.'}), 400
-
-    try:
-        # 1. Ejecutar la lógica de Agente/RAG: Obtener contexto de la DB si aplica
-        db_context, prompt_to_llm = get_db_stats_context(user_prompt)
-
-        # 2. Llamar al LLM (ahora con el contexto de la DB)
-        result = call_llm(user_prompt=prompt_to_llm, db_context=db_context)
-        
-        status_code = 200 if result.get('ok') else 503
-        return jsonify(result), status_code
-
-    except Exception as e:
-        # 🚨 CORRECCIÓN IMPLEMENTADA: Captura de errores y devolución de JSON válido
-        print(f"ERROR FATAL en assistant_api: {e}")
-        return jsonify({
-            'ok': False, 
-            'response': 'Disculpa, ocurrió un error interno en el sistema al intentar procesar tu solicitud. Por favor, revisa la configuración de la base de datos (Supabase) y el cliente LLM.'
-        }), 500
 
 @admin_bp.route('/settings/update-profile', methods=['POST'])
 @role_required(allowed_roles=['administrador'])
@@ -411,3 +470,40 @@ def create_provider():
         return redirect(url_for('admin.inventory'))
         
     return render_template('admin/create_provider_form.html')
+
+## 🤖 RUTAS DEL ASISTENTE LLM
+@admin_bp.route('/assistant')
+@role_required(allowed_roles=['administrador'])
+def assistant():
+    """Admin LLM assistant UI page. Se pasa el nombre del usuario para personalizar."""
+    # OBTENEMOS EL NOMBRE DEL USUARIO DE g.profile (asumiendo que g se carga correctamente)
+    user_name = g.profile.get('nombre_completo', 'Administrador') 
+    return render_template('admin/assistant.html', user_name=user_name) 
+
+@admin_bp.route('/assistant/api', methods=['POST'])
+@role_required(allowed_roles=['administrador'])
+def assistant_api():
+    """Ruta API para el asistente LLM (con manejo de errores mejorado)."""
+    data = request.get_json() or {}
+    user_prompt = data.get('message') or ''
+    
+    if not user_prompt:
+        return jsonify({'ok': False, 'response': 'No message provided.'}), 400
+
+    try:
+        # 1. Ejecutar la lógica de Agente/RAG: Obtener contexto de la DB si aplica
+        db_context, prompt_to_llm = get_db_stats_context(user_prompt)
+
+        # 2. Llamar al LLM (ahora con el contexto de la DB)
+        result = call_llm(user_prompt=prompt_to_llm, db_context=db_context)
+        
+        status_code = 200 if result.get('ok') else 503
+        return jsonify(result), status_code
+
+    except Exception as e:
+        # Captura cualquier error de Python, Supabase o LLM y devuelve JSON válido
+        print(f"ERROR FATAL en assistant_api: {e}")
+        return jsonify({
+            'ok': False, 
+            'response': 'Disculpa, ocurrió un error interno en el sistema al intentar procesar tu solicitud. Por favor, revisa la configuración de la base de datos (Supabase) y el cliente LLM.'
+        }), 500
