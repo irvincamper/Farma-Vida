@@ -413,8 +413,10 @@ def settings():
 @admin_bp.route('/assistant')
 @role_required(allowed_roles=['administrador'])
 def assistant():
-    """Admin LLM assistant UI page."""
-    return render_template('admin/assistant.html')
+    """Admin LLM assistant UI page. Se pasa el nombre del usuario para personalizar."""
+    # OBTENEMOS EL NOMBRE DEL USUARIO DE g.profile (asumiendo que g se carga correctamente)
+    user_name = g.profile.get('nombre_completo', 'Administrador') 
+    return render_template('admin/assistant.html', user_name=user_name) # <--- CAMBIO IMPLEMENTADO AQUÍ
 
 
 @admin_bp.route('/assistant/api', methods=['POST'])

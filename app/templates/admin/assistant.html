@@ -30,6 +30,13 @@
 
 {% block scripts %}
 <script>
+    // --- VARIABLES DE CONFIGURACIÓN ---
+    // Usamos el nombre pasado por Flask para personalizar el chat
+    const USER_NAME = "{{ user_name }}"; 
+    const ASSISTANT_ROLE = "Asistente";
+    const WELCOME_MESSAGE = "Hola. Soy tu Asistente experto en la administración del sistema Cuida Mas. Estoy aquí para ayudarte con estadísticas, conteos, y preguntas generales. ¿En qué puedo asistirte hoy?";
+
+
     // Variables globales (acceso rápido a elementos del DOM)
     const chatBox = document.getElementById('chatBox');
     const msgInput = document.getElementById('msgInput');
@@ -49,7 +56,8 @@
         const text = msgInput.value.trim();
         if (!text) return;
 
-        addMessage('Tú', text);
+        // Usamos el nombre del usuario en lugar de 'Tú'
+        addMessage(USER_NAME, text); 
         msgInput.value = '';
         setStatus('Enviando consulta al Asistente…', 'primary');
         msgInput.disabled = true;
@@ -64,14 +72,14 @@
             });
             const j = await res.json();
             if (j.ok) {
-                addMessage('Asistente', j.response);
+                addMessage(ASSISTANT_ROLE, j.response);
                 setStatus('Listo');
             } else {
-                addMessage('Asistente (error)', j.response || 'Error de servicio: Sin respuesta');
+                addMessage(ASSISTANT_ROLE + ' (error)', j.response || 'Error de servicio: Sin respuesta');
                 setStatus('Error: Inténtalo de nuevo.', 'danger');
             }
         } catch (e) {
-            addMessage('Asistente (error)', 'Error de conexión: ' + String(e));
+            addMessage(ASSISTANT_ROLE + ' (error)', 'Error de conexión: ' + String(e));
             setStatus('Error de conexión.', 'danger');
         } finally {
             msgInput.disabled = false;
@@ -85,8 +93,10 @@
         const el = document.createElement('div');
         el.className = 'mb-2';
         
-        const roleClass = role === 'Tú' ? 'text-primary' : 'text-success';
-        const roleIcon = role === 'Tú' ? '<i class="fas fa-user-circle"></i>' : '<i class="fas fa-robot"></i>';
+        // La clase y el icono se definen si es el usuario o el asistente
+        const isUser = role === USER_NAME;
+        const roleClass = isUser ? 'text-primary' : 'text-success';
+        const roleIcon = isUser ? '<i class="fas fa-user-circle"></i>' : '<i class="fas fa-robot"></i>';
 
         el.innerHTML = `<strong class="${roleClass}">${roleIcon} ${role}:</strong> <div class="small text-dark">${escapeHtml(text)}</div>`;
         chatBox.appendChild(el);
@@ -176,55 +186,70 @@
         }
     }
 
-    // --- INICIALIZACIÓN DE RECONOCIMIENTO Y ASIGNACIÓN DE HANDLERS ---
-    
-    recognition = initSpeechRecognition();
-    
-    if (recognition) {
-        recognition.onresult = function(event) {
-            clearTimeout(speechTimeout); 
-            let interimTranscript = '';
-            let finalTranscript = '';
+    // --- INICIALIZACIÓN DE CHAT Y RECONOCIMIENTO ---
 
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                let transcript = event.results[i][0].transcript;
-                if (event.results[i].isFinal) {
-                    finalTranscript += transcript.trim() + ' ';
-                } else {
-                    interimTranscript += transcript;
-                }
-            }
-            
-            msgInput.value = (finalTranscript || interimTranscript).trim();
-            setStatus('Grabando: ' + msgInput.value, 'success');
+    function initializeChat() {
+        // 1. Mostrar el mensaje de bienvenida del Asistente
+        addMessage(ASSISTANT_ROLE, WELCOME_MESSAGE);
 
-            speechTimeout = setTimeout(() => {
-                console.log("Fin de habla detectado (Silencio).");
-                stopListening(true); 
-            }, 3000); 
-        };
-
-        recognition.onerror = function(event) {
-            console.error("Error de reconocimiento:", event.error);
-            if (isListening) {
-                if (event.error === 'no-speech') {
-                    setStatus('No se detectó habla. Inténtalo de nuevo.', 'warning');
-                } else if (event.error === 'not-allowed') {
-                    setStatus('Permiso denegado. Habilita el micrófono en la configuración del navegador.', 'danger');
-                } else if (event.error !== 'aborted') {
-                    setStatus(`Error: ${event.error}`, 'danger');
-                }
-            }
-            stopListening(false); 
-        };
+        // 2. Inicializar el objeto de reconocimiento
+        recognition = initSpeechRecognition();
         
-        recognition.onend = function() {
-            if (isListening) {
-                console.log("Reconocimiento finalizado inesperadamente, limpiando estado.");
-                stopListening(true); 
-            }
-        };
+        if (recognition) {
+            // 3. Asignar todos los manejadores de eventos del objeto de reconocimiento
+            recognition.onresult = function(event) {
+                clearTimeout(speechTimeout); 
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    let transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript.trim() + ' ';
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                msgInput.value = (finalTranscript || interimTranscript).trim();
+                setStatus('Grabando: ' + msgInput.value, 'success');
+
+                speechTimeout = setTimeout(() => {
+                    console.log("Fin de habla detectado (Silencio).");
+                    stopListening(true); 
+                }, 3000); 
+            };
+
+            recognition.onerror = function(event) {
+                console.error("Error de reconocimiento:", event.error);
+                if (isListening) {
+                    if (event.error === 'no-speech') {
+                        setStatus('No se detectó habla. Inténtalo de nuevo.', 'warning');
+                    } else if (event.error === 'not-allowed') {
+                        setStatus('Permiso denegado. Habilita el micrófono en la configuración del navegador.', 'danger');
+                    } else if (event.error !== 'aborted') {
+                        setStatus(`Error: ${event.error}`, 'danger');
+                    }
+                }
+                stopListening(false); 
+            };
+            
+            recognition.onend = function() {
+                if (isListening) {
+                    console.log("Reconocimiento finalizado inesperadamente, limpiando estado.");
+                    stopListening(true); 
+                }
+            };
+        }
+
+        // 4. Inicializar el estado de la aplicación
+        if (!recognition) {
+            // El status ya fue configurado por initSpeechRecognition
+        } else {
+            setStatus('Listo');
+        }
     }
+
 
     // --- ASIGNACIÓN DE EVENTOS A BOTONES (Siempre se ejecutan) ---
     
@@ -244,12 +269,9 @@
         } 
     });
     
-    // Inicializar el estado de la aplicación
-    if (!recognition) {
-        // El status ya fue configurado por initSpeechRecognition
-    } else {
-        setStatus('Listo');
-    }
+    // Iniciar el chat
+    initializeChat();
+
 </script>
 {% endblock %}
 
