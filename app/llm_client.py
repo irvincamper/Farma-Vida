@@ -38,14 +38,13 @@ def call_llm(
 
         # 5. Configurar la Instrucción del Sistema y el Contenido de la Solicitud
         
-        # A. INSTRUCCIÓN MEJORADA (Soluciona el bloqueo de temas de salud)
+        # A. INSTRUCCIÓN MEJORADA (Nombre cambiado a 'Cuida Mas')
         system_instruction = (
-            'Eres un asistente experto en información general farmacéutica y en la administración del sistema Farma-Vida. '
+            'Eres un asistente experto en información general farmacéutica y en la administración del sistema **Cuida Mas**. '
             'Responde de forma profesional, precisa y concisa. **Nunca ofrezcas consejos médicos ni diagnósticos; solo proporciona información general y factual.**'
         )
         
         # B. CONSTRUCCIÓN DEL PROMPT (Integra el contexto de la DB)
-        # El modelo sabrá si se le pasó información de la DB.
         full_prompt = f"Consulta del Usuario: {prompt}\n\n"
         if db_context:
             full_prompt += f"CONTEXTO DE LA BASE DE DATOS PARA RESPONDER: {db_context}\n\n"

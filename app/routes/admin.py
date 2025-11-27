@@ -21,7 +21,7 @@ admin_bp = Blueprint('admin', __name__)
 from ..llm_client import call_llm
 
 # ----------------------------------------------------------------------
-# FUNCIONES AUXILIARES DE BASE DE DATOS PARA EL LLM (RAG)
+# FUNCIONES AUXILIARES DE BASE DE DATOS PARA EL LLM (RAG) - ¡CORREGIDO!
 # ----------------------------------------------------------------------
 
 def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
@@ -36,8 +36,9 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
     processed_prompt = prompt # Por defecto, el prompt no se modifica
     
     try:
-        # --- PATRONES DE CONTEO DE USUARIOS/PACIENTES ---
-        if re.search(r'cuant(o|a)s\s+(usuarios|personas\s+registradas|pacientes)\s+hay', prompt_lower):
+        # --- PATRONES DE CONTEO DE PACIENTES/USUARIOS (MEJORADO) ---
+        # Patrón que detecta: ¿cuántos pacientes hay?, ¿total de usuarios?, ¿cuántas personas registradas hay?
+        if re.search(r'cuant(o|a)s\s+(pacientes|usuarios|personas\s+registradas)\s+hay|total\s+de\s+(pacientes|usuarios)', prompt_lower):
             
             # 1. Obtener conteo de usuarios/pacientes
             total_users_res = supabase.client.table('perfiles').select('id', count='exact').execute()
@@ -49,14 +50,15 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
             
             # 2. Construir el contexto para el LLM
             db_context = (
-                f"El total de usuarios en el sistema es {total_users}. "
-                f"El total de usuarios con el rol de PACIENTE es {pacientes_count}."
+                f"El número total de usuarios registrados en el sistema es {total_users}. "
+                f"El número total de pacientes registrados (rol 4) es {pacientes_count}."
             )
-            # 3. Dar una instrucción clara al LLM para formatear el dato
-            processed_prompt = "Usando el contexto de la base de datos proporcionado, proporciona un resumen del conteo de usuarios y pacientes en un formato amigable."
+            # 3. Instrucción CLARA y ASESIVA para que el LLM use el dato
+            processed_prompt = "URGENTE: Usa EXCLUSIVAMENTE el CONTEXTO DE LA BASE DE DATOS proporcionado para responder la pregunta del usuario sobre el conteo de pacientes y usuarios de forma amigable."
             
-        # --- PATRONES DE CONTEO DE INVENTARIO/STOCK ---
-        elif re.search(r'cuant(o|a)s\s+(medicamentos|meds|productos|stock)\s+(hay|disponibles)', prompt_lower):
+        # --- PATRONES DE CONTEO DE INVENTARIO/STOCK TOTAL (MEJORADO) ---
+        # Patrón que detecta: ¿stock total?, ¿suma de productos?, ¿cuantas unidades hay en total?
+        elif re.search(r'(stock|unidades)\s+total|suma\s+de\s+productos|cuantas\s+unidades\s+hay\s+en\s+total|inventario\s+actual', prompt_lower):
             
             # 1. Obtener conteo de inventario y el total de stock
             meds_count_res = supabase.client.table('inventario').select('id', count='exact').execute()
@@ -68,33 +70,34 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
             # 2. Construir el contexto para el LLM
             db_context = (
                 f"El total de productos/medicamentos diferentes en el inventario es {meds_count}. "
-                f"El stock total combinado de todos los productos es {total_stock} unidades."
+                f"El stock total combinado de todas las unidades es {total_stock}."
             )
-            # 3. Dar una instrucción clara al LLM para formatear el dato
-            processed_prompt = "Usando el contexto de la base de datos proporcionado, proporciona un resumen del inventario actual y el stock total combinado."
+            # 3. Instrucción CLARA y ASESIVA para que el LLM use el dato
+            processed_prompt = "URGENTE: Usa EXCLUSIVAMENTE el CONTEXTO DE LA BASE DE DATOS proporcionado para responder la pregunta del usuario sobre el inventario actual y el stock total combinado."
 
-        # --- PATRONES DE BÚSQUEDA ESPECÍFICA (AUNQUE NO IMPLEMENTADA) ---
-        elif re.search(r'informacion\s+de\s+(irvin|hernandez)', prompt_lower):
+        # --- RECHAZO DE BÚSQUEDA ESPECÍFICA (Nombre del sistema actualizado) ---
+        elif re.search(r'informacion\s+de\s+(irvin|carlos\s+perez)', prompt_lower):
             # Para preguntas que requieren búsqueda compleja, se puede forzar un rechazo elegante
             db_context = "El LLM no está configurado para buscar información detallada de usuarios individuales por seguridad. Solo puede dar estadísticas generales."
-            processed_prompt = "El usuario está pidiendo información detallada de una persona, explica amablemente por qué no puedes proporcionar ese dato por seguridad."
+            # Nombre 'Cuida Mas' actualizado
+            processed_prompt = "El usuario está pidiendo información detallada de una persona, explica amablemente por qué no puedes proporcionar ese dato por seguridad en el sistema Cuida Mas."
         
         else:
             # Pregunta de conocimiento general (ej: paracetamol, tos)
             processed_prompt = prompt
 
     except Exception as e:
-        # En caso de error de Supabase/DB (ej: la tabla no existe), informamos al LLM
-        db_context = f"Error al consultar la base de datos: {str(e)}. No uses este error en la respuesta final."
+        # En caso de error de Supabase/DB, informamos al LLM de forma segura
+        db_context = f"Error al consultar la base de datos: {str(e)}. NO USES ESTE ERROR EN LA RESPUESTA FINAL. Responde que hubo un problema técnico y que intente más tarde."
         processed_prompt = prompt
         
     return db_context, processed_prompt
 
 # ----------------------------------------------------------------------
-# RUTA DEL ASISTENTE LLM (MODIFICADA)
+# RUTA DEL ASISTENTE LLM Y OTRAS RUTAS DEL ADMIN (SIN CAMBIOS)
 # ----------------------------------------------------------------------
 
-# --- GESTIÓN DE DASHBOARD Y USUARIOS (SIN CAMBIOS) ---
+# --- GESTIÓN DE DASHBOARD Y USUARIOS ---
 @admin_bp.route('/dashboard')
 @role_required(allowed_roles=['administrador'])
 def dashboard():
@@ -161,7 +164,6 @@ def manage_users():
 
     return render_template('admin/manage_users.html', users=users_list, q=(q or ''), order=order)
 
-# ... (create_user, edit_user, delete_user sin cambios) ...
 @admin_bp.route('/users/new', methods=['GET', 'POST'])
 @role_required(allowed_roles=['administrador'])
 def create_user():
@@ -318,7 +320,6 @@ def export_inventory():
     )
 
 # --- OTRAS RUTAS (SIN CAMBIOS) ---
-# ... (reports, promotions, settings, providers, etc. se mantienen igual) ...
 @admin_bp.route('/reports')
 @role_required(allowed_roles=['administrador'])
 def reports():
@@ -441,7 +442,6 @@ def assistant_api():
     db_context, prompt_to_llm = get_db_stats_context(user_prompt)
 
     # 2. Llamar al LLM (ahora con el contexto de la DB)
-    # db_context será None si es una pregunta de conocimiento general
     result = call_llm(prompt_to_llm, db_context=db_context)
     
     status_code = 200 if result.get('ok') else 503
