@@ -24,8 +24,8 @@ ROLE_MAP = {
     'administrador': 1, 
     'admin': 1,
     'doctor': 2,
-    'paciente': 3,       # Pacientes tienen el ID 3 (26 usuarios)
-    'farmaceutico': 4,   # Farmacéuticos tienen el ID 4 (2 usuarios)
+    'paciente': 3,       # Pacientes tienen el ID 3
+    'farmaceutico': 4,   # Farmacéuticos tienen el ID 4
 }
 # ----------------------------------------------------------------------
 # FUNCIONES AUXILIARES DE BASE DE DATOS PARA EL LLM (RAG)
@@ -44,11 +44,9 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
     
     try:
         # --- PATRONES DE CONTEO DE PACIENTES/USUARIOS/ROLES ---
-        # Si pregunta por cualquier tipo de conteo de usuarios/roles:
         if re.search(r'cuant(o|a)s\s+(pacientes|usuarios|personas\s+registradas|farmaceuticos|doctores|administradores)\s+hay|total\s+de\s+(pacientes|usuarios|roles)', prompt_lower):
             
             # 1. Obtener conteo de usuarios/pacientes y roles específicos
-            # Usamos select('*', count='exact')
             total_users_res = supabase.client.table('perfiles').select('*', count='exact').execute()
             total_users = total_users_res.count or 0
             
@@ -85,7 +83,6 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
             
             # 1. Obtener conteo de inventario y el total de stock
             meds_count_res = supabase.client.table('inventario').select('*', count='exact').execute()
-            # Aseguramos que si la llamada RPC falla, los valores por defecto sean 0
             total_stock_res = supabase.client.rpc('get_total_stock').execute() 
             
             meds_count = meds_count_res.count or 0
@@ -108,10 +105,9 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
             processed_prompt = prompt
 
     except Exception as e:
-        # Manejo de error de DB mejorado: si la conexión falla, se informa
-        print(f"Error en RAG: {e}")
+        # Manejo de error de DB: Se informa al LLM que no hay datos disponibles
+        print(f"Error en RAG al consultar DB: {e}")
         db_context = None 
-        # Esta es la parte crucial: si hay un error de DB, le decimos al LLM que no tiene datos.
         processed_prompt = "El usuario ha preguntado por estadísticas. Se ha producido un error al intentar acceder a los datos de la base de datos de Cuida Mas. La respuesta debe ser informar al usuario que el sistema no puede acceder a los datos de la base de datos en este momento y que intente más tarde."
         
     return db_context, processed_prompt
@@ -439,14 +435,23 @@ def assistant_api():
     if not user_prompt:
         return jsonify({'ok': False, 'response': 'No message provided.'}), 400
 
-    # 1. Ejecutar la lógica de Agente/RAG: Obtener contexto de la DB si aplica
-    db_context, prompt_to_llm = get_db_stats_context(user_prompt)
+    try:
+        # 1. Ejecutar la lógica de Agente/RAG: Obtener contexto de la DB si aplica
+        db_context, prompt_to_llm = get_db_stats_context(user_prompt)
 
-    # 2. Llamar al LLM (ahora con el contexto de la DB)
-    result = call_llm(user_prompt=prompt_to_llm, db_context=db_context)
-    
-    status_code = 200 if result.get('ok') else 503
-    return jsonify(result), status_code
+        # 2. Llamar al LLM (ahora con el contexto de la DB)
+        result = call_llm(user_prompt=prompt_to_llm, db_context=db_context)
+        
+        status_code = 200 if result.get('ok') else 503
+        return jsonify(result), status_code
+
+    except Exception as e:
+        # 🚨 CORRECCIÓN IMPLEMENTADA: Captura de errores y devolución de JSON válido
+        print(f"ERROR FATAL en assistant_api: {e}")
+        return jsonify({
+            'ok': False, 
+            'response': 'Disculpa, ocurrió un error interno en el sistema al intentar procesar tu solicitud. Por favor, revisa la configuración de la base de datos (Supabase) y el cliente LLM.'
+        }), 500
 
 @admin_bp.route('/settings/update-profile', methods=['POST'])
 @role_required(allowed_roles=['administrador'])
