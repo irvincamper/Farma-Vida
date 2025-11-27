@@ -54,7 +54,7 @@
         setStatus('Enviando consulta al Asistente…', 'primary');
         msgInput.disabled = true;
         sendBtn.disabled = true;
-        micBtn.disabled = true; // Desactivar micrófono al enviar
+        micBtn.disabled = true;
 
         try {
             const res = await fetch('{{ url_for('admin.assistant_api') }}', {
@@ -76,7 +76,7 @@
         } finally {
             msgInput.disabled = false;
             sendBtn.disabled = false;
-            micBtn.disabled = false; // Reactivar micrófono
+            micBtn.disabled = false;
             msgInput.focus();
         }
     }
@@ -108,24 +108,26 @@
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
             micBtn.style.display = 'none';
-            setStatus('El reconocimiento de voz no está soportado.', 'warning');
+            // Mensaje más explícito para el usuario
+            setStatus('ERROR: El reconocimiento de voz no está soportado.', 'danger'); 
             return null;
         }
         
         const recognizer = new SpeechRecognition();
-        recognizer.lang = 'es-ES'; // Revisa que este idioma sea el correcto para ti
+        recognizer.lang = 'es-ES';
         recognizer.continuous = true;
         recognizer.interimResults = true;
         return recognizer;
     }
 
     function startListening() {
-        if (!recognition) return;
+        if (!recognition) {
+             setStatus('El micrófono no puede iniciar. ¿Está usando HTTPS?', 'danger');
+             return;
+        }
         
-        // 1. Limpiar cualquier estado anterior
         clearTimeout(speechTimeout); 
 
-        // Si ya está escuchando, solo damos feedback visual
         if (isListening) {
              setStatus('Micrófono activo. Habla ahora...');
             return;
@@ -139,14 +141,13 @@
             micBtn.classList.add('btn-danger'); 
             micBtn.classList.remove('btn-secondary');
             sendBtn.disabled = true; 
-            micBtn.innerHTML = '<i class="fas fa-microphone-alt"></i>'; // Icono de grabación
+            micBtn.innerHTML = '<i class="fas fa-microphone-alt"></i>';
             setStatus('Escuchando... Di tu pregunta y haz una pausa al terminar.', 'success');
         } catch (e) {
             console.error("Error al iniciar reconocimiento:", e);
             setStatus(`Error al iniciar: ${e.message}. El micrófono ya está activo o permiso falló.`, 'danger');
-             // Forzamos la limpieza si hubo un error de inicio (como "recognition already started")
             if (e.message.includes("recognition already started")) {
-                 isListening = true; // Simular que está activo para forzar stop
+                 isListening = true; 
                  stopListening(false);
             }
         }
@@ -155,24 +156,21 @@
     function stopListening(submitFinalText = true) {
         if (!recognition) return;
 
-        // Limpiar el temporizador
         clearTimeout(speechTimeout);
 
         if (isListening) {
             try {
-                // Detenemos explícitamente el objeto recognition
                 recognition.stop(); 
             } catch(e) {
                 // Ignorar si ya estaba detenido
             }
         }
         
-        // 2. Limpiar el estado visual y de variables
         isListening = false;
         micBtn.classList.remove('btn-danger');
         micBtn.classList.add('btn-secondary');
         sendBtn.disabled = false;
-        micBtn.innerHTML = '<i class="fas fa-microphone"></i>'; // Icono normal
+        micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
 
         if (submitFinalText && msgInput.value.trim()) {
             setStatus('Texto finalizado. Presiona Enviar.', 'info');
@@ -181,7 +179,7 @@
         }
     }
 
-    // --- MANEJADORES DE EVENTOS DE RECONOCIMIENTO ---
+    // --- INICIALIZACIÓN DE RECONOCIMIENTO Y ASIGNACIÓN DE HANDLERS ---
     
     // 1. Inicializar el objeto de reconocimiento
     recognition = initSpeechRecognition();
@@ -189,7 +187,6 @@
     if (recognition) {
         // 2. Asignar todos los manejadores de eventos del objeto de reconocimiento
         recognition.onresult = function(event) {
-            // Reiniciar el temporizador de silencio cada vez que hay un resultado
             clearTimeout(speechTimeout); 
             let interimTranscript = '';
             let finalTranscript = '';
@@ -203,51 +200,46 @@
                 }
             }
             
-            // Si hay transcripción final, la usamos. Si no, usamos la interina
             msgInput.value = (finalTranscript || interimTranscript).trim();
             setStatus('Grabando: ' + msgInput.value, 'success');
 
-            // Temporizador de 3.0 segundos de silencio
             speechTimeout = setTimeout(() => {
                 console.log("Fin de habla detectado (Silencio).");
                 stopListening(true); 
-            }, **3000**); // **Verificamos que sea 3000ms**
+            }, 3000); 
         };
 
         recognition.onerror = function(event) {
             console.error("Error de reconocimiento:", event.error);
-            if (event.error !== 'aborted' && isListening) {
+            if (isListening) {
                 if (event.error === 'no-speech') {
                     setStatus('No se detectó habla. Inténtalo de nuevo.', 'warning');
                 } else if (event.error === 'not-allowed') {
                     setStatus('Permiso denegado. Habilita el micrófono en la configuración del navegador.', 'danger');
-                } else {
+                } else if (event.error !== 'aborted') {
                     setStatus(`Error: ${event.error}`, 'danger');
                 }
             }
-            // Forzar la limpieza, el onend se disparará después, pero ya estará limpio.
             stopListening(false); 
         };
         
         recognition.onend = function() {
-            // 3. Importante: Si el evento onend se dispara y isListening es true, 
-            // significa que se detuvo inesperadamente (por silencio, timeout, etc.)
             if (isListening) {
                 console.log("Reconocimiento finalizado inesperadamente, limpiando estado.");
-                // Limpiar el estado y mantener el texto en el input
                 stopListening(true); 
             }
         };
-
-        // --- ENLACE DE EVENTOS ---
-        micBtn.addEventListener('click', function() {
-            if (isListening) {
-                stopListening(true); 
-            } else {
-                startListening();
-            }
-        });
     }
+
+    // --- ASIGNACIÓN DE EVENTOS A BOTONES (Siempre se ejecutan) ---
+    
+    micBtn.addEventListener('click', function() {
+        if (isListening) {
+            stopListening(true); 
+        } else {
+            startListening(); // Esto internamente verifica si 'recognition' existe.
+        }
+    });
 
     document.getElementById('sendBtn').addEventListener('click', sendMessage);
     document.getElementById('msgInput').addEventListener('keydown', function(e){ 
@@ -259,7 +251,7 @@
     
     // Inicializar el estado de la aplicación
     if (!recognition) {
-        setStatus('Asistente listo (voz no soportada)', 'muted');
+        // No hay necesidad de cambiar el status si ya lo hizo initSpeechRecognition
     } else {
         setStatus('Listo');
     }
