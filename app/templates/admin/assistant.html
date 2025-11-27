@@ -1,63 +1,268 @@
 {% extends 'layout/base.html' %}
 {% block title %}Asistente (Admin){% endblock %}
 {% block content %}
-<header class="header mb-4"><h1><i class="fas fa-robot"></i> Asistente del Administrador</h1><p class="text-muted">Plantea preguntas sobre el sistema, estadísticas o tareas administrativas.</p></header>
+<header class="header mb-4">
+    <h1><i class="fas fa-robot"></i> Asistente del Administrador</h1>
+    <p class="text-muted">Plantea preguntas sobre el sistema, estadísticas o tareas administrativas.</p>
+</header>
 
 <div class="row justify-content-center">
-  <div class="col-12 col-md-10 col-lg-8">
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <div id="chatBox" style="min-height:300px; max-height:500px; overflow:auto; border:1px solid #eee; padding:1rem; border-radius:8px; background:#fafafa"></div>
-        <div class="mt-3 d-flex gap-2">
-          <input id="msgInput" class="form-control" placeholder="Escribe tu pregunta para el asistente..." />
-          <button id="sendBtn" class="btn btn-primary">Enviar</button>
+    <div class="col-12 col-md-10 col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div id="chatBox" style="min-height:300px; max-height:500px; overflow:auto; border:1px solid #eee; padding:1rem; border-radius:8px; background:#fafafa"></div>
+                
+                <div class="mt-3 d-flex gap-2 chat-input-area">
+                    <input id="msgInput" class="form-control" placeholder="Escribe tu pregunta para el asistente..." />
+                    
+                    <button type="button" id="micBtn" class="btn btn-secondary" title="Activar entrada de voz">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    
+                    <button id="sendBtn" class="btn btn-primary">Enviar</button>
+                </div>
+                
+                <div id="status" class="small text-muted mt-2"></div>
+            </div>
         </div>
-        <div id="status" class="small text-muted mt-2"></div>
-      </div>
     </div>
-  </div>
 </div>
 
 {% block scripts %}
 <script>
-async function sendMessage() {
-  const input = document.getElementById('msgInput');
-  const text = input.value.trim();
-  if (!text) return;
-  addMessage('Tú', text);
-  input.value = '';
-  setStatus('Enviando…');
+    // Variables globales (acceso rápido a elementos del DOM)
+    const chatBox = document.getElementById('chatBox');
+    const msgInput = document.getElementById('msgInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const micBtn = document.getElementById('micBtn');
+    const statusDiv = document.getElementById('status');
 
-  try {
-    const res = await fetch('{{ url_for('admin.assistant_api') }}', {
-      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({message: text})
+    let isListening = false;
+    let recognition = null;
+    let speechTimeout = null;
+
+    // --- FUNCIONES DE CHAT ---
+
+    async function sendMessage() {
+        if (isListening) stopListening(false); 
+        
+        const text = msgInput.value.trim();
+        if (!text) return;
+
+        addMessage('Tú', text);
+        msgInput.value = '';
+        setStatus('Enviando consulta al Asistente…', 'primary');
+        msgInput.disabled = true;
+        sendBtn.disabled = true;
+        micBtn.disabled = true; // Desactivar micrófono al enviar
+
+        try {
+            const res = await fetch('{{ url_for('admin.assistant_api') }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            });
+            const j = await res.json();
+            if (j.ok) {
+                addMessage('Asistente', j.response);
+                setStatus('Listo');
+            } else {
+                addMessage('Asistente (error)', j.response || 'Error de servicio: Sin respuesta');
+                setStatus('Error: Inténtalo de nuevo.', 'danger');
+            }
+        } catch (e) {
+            addMessage('Asistente (error)', 'Error de conexión: ' + String(e));
+            setStatus('Error de conexión.', 'danger');
+        } finally {
+            msgInput.disabled = false;
+            sendBtn.disabled = false;
+            micBtn.disabled = false; // Reactivar micrófono
+            msgInput.focus();
+        }
+    }
+
+    function addMessage(role, text) {
+        const el = document.createElement('div');
+        el.className = 'mb-2';
+        
+        const roleClass = role === 'Tú' ? 'text-primary' : 'text-success';
+        const roleIcon = role === 'Tú' ? '<i class="fas fa-user-circle"></i>' : '<i class="fas fa-robot"></i>';
+
+        el.innerHTML = `<strong class="${roleClass}">${roleIcon} ${role}:</strong> <div class="small text-dark">${escapeHtml(text)}</div>`;
+        chatBox.appendChild(el);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function setStatus(t, category = 'muted') { 
+        statusDiv.className = `small mt-2 text-${category}`;
+        statusDiv.innerText = t; 
+    }
+
+    function escapeHtml(text) {
+        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // --- FUNCIONES DE RECONOCIMIENTO DE VOZ ---
+    
+    function initSpeechRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            micBtn.style.display = 'none';
+            setStatus('El reconocimiento de voz no está soportado.', 'warning');
+            return null;
+        }
+        
+        const recognizer = new SpeechRecognition();
+        recognizer.lang = 'es-ES'; // Revisa que este idioma sea el correcto para ti
+        recognizer.continuous = true;
+        recognizer.interimResults = true;
+        return recognizer;
+    }
+
+    function startListening() {
+        if (!recognition) return;
+        
+        // 1. Limpiar cualquier estado anterior
+        clearTimeout(speechTimeout); 
+
+        // Si ya está escuchando, solo damos feedback visual
+        if (isListening) {
+             setStatus('Micrófono activo. Habla ahora...');
+            return;
+        }
+
+        if (!msgInput.value.trim()) msgInput.value = '';
+
+        try {
+            recognition.start();
+            isListening = true;
+            micBtn.classList.add('btn-danger'); 
+            micBtn.classList.remove('btn-secondary');
+            sendBtn.disabled = true; 
+            micBtn.innerHTML = '<i class="fas fa-microphone-alt"></i>'; // Icono de grabación
+            setStatus('Escuchando... Di tu pregunta y haz una pausa al terminar.', 'success');
+        } catch (e) {
+            console.error("Error al iniciar reconocimiento:", e);
+            setStatus(`Error al iniciar: ${e.message}. El micrófono ya está activo o permiso falló.`, 'danger');
+             // Forzamos la limpieza si hubo un error de inicio (como "recognition already started")
+            if (e.message.includes("recognition already started")) {
+                 isListening = true; // Simular que está activo para forzar stop
+                 stopListening(false);
+            }
+        }
+    }
+
+    function stopListening(submitFinalText = true) {
+        if (!recognition) return;
+
+        // Limpiar el temporizador
+        clearTimeout(speechTimeout);
+
+        if (isListening) {
+            try {
+                // Detenemos explícitamente el objeto recognition
+                recognition.stop(); 
+            } catch(e) {
+                // Ignorar si ya estaba detenido
+            }
+        }
+        
+        // 2. Limpiar el estado visual y de variables
+        isListening = false;
+        micBtn.classList.remove('btn-danger');
+        micBtn.classList.add('btn-secondary');
+        sendBtn.disabled = false;
+        micBtn.innerHTML = '<i class="fas fa-microphone"></i>'; // Icono normal
+
+        if (submitFinalText && msgInput.value.trim()) {
+            setStatus('Texto finalizado. Presiona Enviar.', 'info');
+        } else if (!submitFinalText) {
+             setStatus('Listo');
+        }
+    }
+
+    // --- MANEJADORES DE EVENTOS DE RECONOCIMIENTO ---
+    
+    // 1. Inicializar el objeto de reconocimiento
+    recognition = initSpeechRecognition();
+    
+    if (recognition) {
+        // 2. Asignar todos los manejadores de eventos del objeto de reconocimiento
+        recognition.onresult = function(event) {
+            // Reiniciar el temporizador de silencio cada vez que hay un resultado
+            clearTimeout(speechTimeout); 
+            let interimTranscript = '';
+            let finalTranscript = '';
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                let transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript.trim() + ' ';
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+            
+            // Si hay transcripción final, la usamos. Si no, usamos la interina
+            msgInput.value = (finalTranscript || interimTranscript).trim();
+            setStatus('Grabando: ' + msgInput.value, 'success');
+
+            // Temporizador de 3.0 segundos de silencio
+            speechTimeout = setTimeout(() => {
+                console.log("Fin de habla detectado (Silencio).");
+                stopListening(true); 
+            }, **3000**); // **Verificamos que sea 3000ms**
+        };
+
+        recognition.onerror = function(event) {
+            console.error("Error de reconocimiento:", event.error);
+            if (event.error !== 'aborted' && isListening) {
+                if (event.error === 'no-speech') {
+                    setStatus('No se detectó habla. Inténtalo de nuevo.', 'warning');
+                } else if (event.error === 'not-allowed') {
+                    setStatus('Permiso denegado. Habilita el micrófono en la configuración del navegador.', 'danger');
+                } else {
+                    setStatus(`Error: ${event.error}`, 'danger');
+                }
+            }
+            // Forzar la limpieza, el onend se disparará después, pero ya estará limpio.
+            stopListening(false); 
+        };
+        
+        recognition.onend = function() {
+            // 3. Importante: Si el evento onend se dispara y isListening es true, 
+            // significa que se detuvo inesperadamente (por silencio, timeout, etc.)
+            if (isListening) {
+                console.log("Reconocimiento finalizado inesperadamente, limpiando estado.");
+                // Limpiar el estado y mantener el texto en el input
+                stopListening(true); 
+            }
+        };
+
+        // --- ENLACE DE EVENTOS ---
+        micBtn.addEventListener('click', function() {
+            if (isListening) {
+                stopListening(true); 
+            } else {
+                startListening();
+            }
+        });
+    }
+
+    document.getElementById('sendBtn').addEventListener('click', sendMessage);
+    document.getElementById('msgInput').addEventListener('keydown', function(e){ 
+        if (e.key === 'Enter' && !e.shiftKey) { 
+            e.preventDefault(); 
+            sendMessage(); 
+        } 
     });
-    const j = await res.json();
-    if (j.ok) addMessage('Asistente', j.response);
-    else addMessage('Asistente (error)', j.response || 'Sin respuesta');
-  } catch (e) {
-    addMessage('Asistente (error)', String(e));
-  } finally {
-    setStatus('Listo');
-  }
-}
-
-function addMessage(role, text) {
-  const box = document.getElementById('chatBox');
-  const el = document.createElement('div');
-  el.className = 'mb-2';
-  el.innerHTML = `<strong>${role}:</strong> <div class="small text-muted">${escapeHtml(text)}</div>`;
-  box.appendChild(el);
-  box.scrollTop = box.scrollHeight;
-}
-
-function setStatus(t) { document.getElementById('status').innerText = t; }
-
-function escapeHtml(text) { return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-
-document.getElementById('sendBtn').addEventListener('click', sendMessage);
-document.getElementById('msgInput').addEventListener('keydown', function(e){ if (e.key==='Enter') sendMessage(); });
-setStatus('Listo');
+    
+    // Inicializar el estado de la aplicación
+    if (!recognition) {
+        setStatus('Asistente listo (voz no soportada)', 'muted');
+    } else {
+        setStatus('Listo');
+    }
 </script>
 {% endblock %}
 
