@@ -29,7 +29,7 @@ ROLE_MAP = {
     'paciente': 4
 }
 # ----------------------------------------------------------------------
-# FUNCIONES AUXILIARES DE BASE DE DATOS PARA EL LLM (RAG) - ¡CONTEO CORREGIDO!
+# FUNCIONES AUXILIARES DE BASE DE DATOS PARA EL LLM (RAG)
 # ----------------------------------------------------------------------
 
 def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
@@ -45,13 +45,10 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
     
     try:
         # --- PATRONES DE CONTEO DE PACIENTES/USUARIOS/ROLES ---
-        # Se incluye 'administradores' en el regex de detección para ser más precisos.
         if re.search(r'cuant(o|a)s\s+(pacientes|usuarios|personas\s+registradas|farmaceuticos|doctores|administradores)\s+hay|total\s+de\s+(pacientes|usuarios|roles)', prompt_lower):
             
             # 1. Obtener conteo de usuarios/pacientes y roles específicos
-            # Usamos select('*', count='exact')
             total_users_res = supabase.client.table('perfiles').select('*', count='exact').execute()
-            
             total_users = total_users_res.count or 0
             
             # Conteo de roles individuales
@@ -64,14 +61,12 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
             farmaceuticos_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['farmaceutico']).execute()
             farmaceuticos_count = farmaceuticos_count_res.count or 0
             
-            # **INCLUSIÓN DEL CONTEO DE ADMINISTRADORES**
             admin_count_res = supabase.client.table('perfiles').select('*', count='exact').eq('id_de_rol', ROLE_MAP['administrador']).execute()
             admin_count = admin_count_res.count or 0
             
-            # Cálculo de la suma de roles para verificación interna del contexto
             sum_of_roles = pacientes_count + doctores_count + farmaceuticos_count + admin_count
 
-            # 2. Construir el contexto para el LLM (Más claro, incluye administradores y verifica la suma)
+            # 2. Construir el contexto para el LLM (Claro y Asertivo)
             db_context = (
                 f"La ÚNICA FUENTE DE DATOS es la siguiente: "
                 f"El número TOTAL de usuarios registrados en el sistema es **{total_users}**. "
@@ -79,8 +74,8 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
                 f"**Doctores={doctores_count}**, **Farmacéuticos={farmaceuticos_count}**. "
                 f"La suma de todos los roles es {sum_of_roles}. Los datos son exactos."
             )
+            
             # 3. Instrucción CLARA y ASESIVA para que el LLM use el dato
-            # Se refuerza la instrucción para usar EXCLUSIVAMENTE los datos proporcionados.
             processed_prompt = "URGENTE: Responde la pregunta del usuario sobre el conteo de usuarios y roles usando EXCLUSIVAMENTE los DATOS EXACTOS que se te proporcionaron en el contexto de la base de datos."
             
         # --- PATRONES DE CONTEO DE INVENTARIO/STOCK TOTAL ---
@@ -91,7 +86,14 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
             total_stock_res = supabase.client.rpc('get_total_stock').execute() 
             
             meds_count = meds_count_res.count or 0
-            total_stock = int(total_stock_res.data[0]['total_stock']) if total_stock_res and total_stock_res.data and total_stock_res.data[0].get('total_stock') is not None else 0
+            
+            # Parseo robusto de la respuesta RPC (MEJORA CRÍTICA)
+            total_stock = 0
+            if total_stock_res and total_stock_res.data and len(total_stock_res.data) > 0 and 'total_stock' in total_stock_res.data[0]:
+                 try:
+                    total_stock = int(total_stock_res.data[0]['total_stock'])
+                 except (ValueError, TypeError):
+                    total_stock = 0
             
             # 2. Construir el contexto para el LLM
             db_context = (
@@ -102,7 +104,7 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
             processed_prompt = "URGENTE: Usa EXCLUSIVAMENTE el CONTEXTO DE LA BASE DE DATOS proporcionado para responder la pregunta del usuario sobre el inventario actual y el stock total combinado."
 
         # --- RECHAZO DE BÚSQUEDA ESPECÍFICA ---
-        elif re.search(r'informacion\s+de\s+(irvin|carlos\s+perez|persona)', prompt_lower):
+        elif re.search(r'informacion\s+de\s+(irvin|carlos\s+perez|persona|correo\s+electronico\s+de)', prompt_lower):
             db_context = "El LLM no está configurado para buscar información detallada de usuarios individuales por seguridad. Solo puede dar estadísticas generales."
             processed_prompt = "El usuario está pidiendo información detallada de una persona, explica amablemente por qué no puedes proporcionar ese dato por seguridad en el sistema Cuida Mas."
         
@@ -110,22 +112,22 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
             processed_prompt = prompt
 
     except Exception as e:
-        # Manejo de error de DB mejorado: da una respuesta amigable en lugar de un error técnico
-        print(f"Error en RAG: {e}")
+        # Manejo de error de DB mejorado: da una respuesta amigable
+        print(f"Error en RAG de Supabase: {e}")
         db_context = "Se produjo un error técnico irrecuperable al intentar acceder a las estadísticas de la base de datos."
         processed_prompt = "El usuario ha preguntado por estadísticas, pero se ha producido un error técnico. Responde de forma amable, indicando que el sistema tiene un problema temporal para acceder a los datos, y que intente más tarde."
         
     return db_context, processed_prompt
 
 # ----------------------------------------------------------------------
-# RUTAS DE ADMINISTRADOR (El resto del código permanece igual)
+# RUTAS DE ADMINISTRADOR (El resto del código)
 # ----------------------------------------------------------------------
 
 @admin_bp.route('/dashboard')
 @role_required(allowed_roles=['administrador'])
 def dashboard():
     try:
-        # Se mantiene el conteo simple en dashboard, pero si da problemas, aplicar la misma corrección
+        # Nota: Estas consultas se mantienen simples para el dashboard
         user_count_res = supabase.client.table('perfiles').select('id', count='exact').execute()
         doctor_count_res = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', 2).execute()
         meds_count_res = supabase.client.table('inventario').select('id', count='exact').execute()
@@ -276,10 +278,10 @@ def inventory():
     inventory_list.sort(key=lambda it: (it.get('nombre') or '').lower(), reverse=(order == 'desc'))
 
     return render_template('admin/inventory.html', 
-                            inventory_items=inventory_list or [],
-                            categories=categories or [],
-                            providers=providers_list or [],
-                            q=(q or ''), order=order)
+                             inventory_items=inventory_list or [],
+                             categories=categories or [],
+                             providers=providers_list or [],
+                             q=(q or ''), order=order)
 
 @admin_bp.route('/inventory/add', methods=['POST'])
 @role_required(allowed_roles=['administrador', 'farmaceutico'])

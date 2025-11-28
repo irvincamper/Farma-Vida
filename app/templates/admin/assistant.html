@@ -31,7 +31,6 @@
 {% block scripts %}
 <script>
     // --- VARIABLES DE CONFIGURACIÓN ---
-    // Usamos el nombre pasado por Flask para personalizar el chat
     const USER_NAME = "{{ user_name }}"; 
     const ASSISTANT_ROLE = "Asistente";
     const WELCOME_MESSAGE = "Hola. Soy tu Asistente experto en la administración del sistema Cuida Mas. Estoy aquí para ayudarte con estadísticas, conteos, y preguntas generales. ¿En qué puedo asistirte hoy?";
@@ -56,7 +55,6 @@
         const text = msgInput.value.trim();
         if (!text) return;
 
-        // Usamos el nombre del usuario en lugar de 'Tú'
         addMessage(USER_NAME, text); 
         msgInput.value = '';
         setStatus('Enviando consulta al Asistente…', 'primary');
@@ -93,12 +91,12 @@
         const el = document.createElement('div');
         el.className = 'mb-2';
         
-        // La clase y el icono se definen si es el usuario o el asistente
         const isUser = role === USER_NAME;
         const roleClass = isUser ? 'text-primary' : 'text-success';
         const roleIcon = isUser ? '<i class="fas fa-user-circle"></i>' : '<i class="fas fa-robot"></i>';
-
+        
         el.innerHTML = `<strong class="${roleClass}">${roleIcon} ${role}:</strong> <div class="small text-dark">${escapeHtml(text)}</div>`;
+        
         chatBox.appendChild(el);
         chatBox.scrollTop = chatBox.scrollHeight;
     }
@@ -109,6 +107,8 @@
     }
 
     function escapeHtml(text) {
+        // Se mantiene para seguridad. Si deseas que el LLM use formatos (negritas, listas), 
+        // tendrías que usar una librería de Markdown a HTML aquí.
         return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
@@ -131,14 +131,14 @@
 
     function startListening() {
         if (!recognition) {
-             setStatus('El micrófono no puede iniciar. ¿Está usando HTTPS?', 'danger');
-             return;
+            setStatus('El micrófono no puede iniciar. ¿Está usando HTTPS?', 'danger');
+            return;
         }
         
         clearTimeout(speechTimeout); 
 
         if (isListening) {
-             setStatus('Micrófono activo. Habla ahora...');
+            setStatus('Micrófono activo. Habla ahora...');
             return;
         }
 
@@ -156,8 +156,8 @@
             console.error("Error al iniciar reconocimiento:", e);
             setStatus(`Error al iniciar: ${e.message}. El micrófono ya está activo o permiso falló.`, 'danger');
             if (e.message.includes("recognition already started")) {
-                 isListening = true; 
-                 stopListening(false);
+                isListening = true; 
+                stopListening(false);
             }
         }
     }
@@ -182,7 +182,7 @@
         if (submitFinalText && msgInput.value.trim()) {
             setStatus('Texto finalizado. Presiona Enviar.', 'info');
         } else if (!submitFinalText) {
-             setStatus('Listo');
+            setStatus('Listo');
         }
     }
 
