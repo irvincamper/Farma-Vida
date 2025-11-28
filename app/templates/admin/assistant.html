@@ -94,9 +94,8 @@
         const isUser = role === USER_NAME;
         const roleClass = isUser ? 'text-primary' : 'text-success';
         const roleIcon = isUser ? '<i class="fas fa-user-circle"></i>' : '<i class="fas fa-robot"></i>';
-        
+
         el.innerHTML = `<strong class="${roleClass}">${roleIcon} ${role}:</strong> <div class="small text-dark">${escapeHtml(text)}</div>`;
-        
         chatBox.appendChild(el);
         chatBox.scrollTop = chatBox.scrollHeight;
     }
@@ -107,8 +106,6 @@
     }
 
     function escapeHtml(text) {
-        // Se mantiene para seguridad. Si deseas que el LLM use formatos (negritas, listas), 
-        // tendrías que usar una librería de Markdown a HTML aquí.
         return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
