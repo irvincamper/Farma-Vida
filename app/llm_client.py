@@ -29,24 +29,29 @@ def call_llm(
     try:
         client = genai.Client(api_key=GEMINI_KEY)
 
-        # A. INSTRUCCIÓN CRÍTICA Y MEJORADA para evitar la alucinación
+        # A. INSTRUCCIÓN CRÍTICA Y MEJORADA (Se añade el formato de respuesta y se hace el uso del contexto MANDATORIO)
         system_instruction = (
             '**CRÍTICO:** Eres un asistente experto en la administración del sistema **Cuida Mas**. '
-            'Tu única prioridad es responder a preguntas sobre conteos y métricas utilizando **SOLAMENTE** los datos provistos en el "CONTEXTO DE LA BASE DE DATOS". Si los datos están presentes, **NO inventes, NO agregues, y NO busques información adicional**. '
-            'Responde de forma profesional, precisa y concisa, dando los números y la información exacta **directamente**, sin preámbulos, introducciones o explicaciones. '
-            'Para preguntas generales (no estadísticas), usa tu conocimiento general, pero **siempre** prioriza los datos de la DB si están disponibles. '
-            '**Nunca** ofrezcas consejos médicos ni diagnósticos.'
+            'Tu única prioridad es responder a preguntas sobre conteos y métricas. '
+            
+            '1. **RESPUESTAS CON DATOS (CONTEXTO DISPONIBLE):** Debes usar **SOLAMENTE** los datos provistos en el "CONTEXTO DE LA BASE DE DATOS". Responde de forma **directa, precisa y concisa, utilizando exclusivamente los números y el texto fáctico proporcionado**. **PROHIBIDO** inventar, buscar, o agregar cualquier otra información. El formato debe ser lo más escueto posible (ej: "38 usuarios registrados en total"). '
+            
+            '2. **RESPUESTAS SIN DATOS (CONTEXTO AUSENTE):** Para preguntas generales (no estadísticas), usa tu conocimiento. '
+            
+            '3. **RECHAZO DE SEGURIDAD:** Si el contexto te indica que el usuario pidió datos personales (ej: Irvin), **DEBES** rechazar la petición con la razón de "políticas de privacidad y seguridad del sistema Cuida Mas", no con razones de "dato no encontrado".'
+            
+            '**ATENCIÓN:** Tu TAREA PRINCIPAL es la precisión y la concisión, priorizando SIEMPRE la información de la DB.'
         )
         
         # B. CONSTRUCCIÓN DEL PROMPT (Integra el contexto de la DB)
         # Añadimos una instrucción de contexto muy clara.
         full_prompt = f"Consulta del Usuario: {prompt}\n\n"
         if db_context:
-            full_prompt += f"**INSTRUCCIÓN CRÍTICA DE DATOS:** Usa EXCLUSIVAMENTE la siguiente información fáctica para responder: {db_context}\n\n"
+            full_prompt += f"**CONTEXTO DE LA BASE DE DATOS (MANDATORIO):** {db_context}\n\n"
         
         config = dict(
             system_instruction=system_instruction,
-            temperature=0.1, # Baja la temperatura a 0.1 para respuestas máximamente factuales
+            temperature=0.0, # Temperatura reducida a 0.0 para la máxima predictibilidad y adherencia a la instrucción.
             max_output_tokens=600
         )
         
