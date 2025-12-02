@@ -217,4 +217,4 @@ class Pharmacist:
             ).eq('id', prescription_id).maybe_single().execute()
             return response.data, None
         except Exception as e:
-            return None, str(e)
+            return None, str(e)a 
