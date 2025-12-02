@@ -1,7 +1,5 @@
 # app/models/user.py
 
-# ¡LA IMPORTACIÓN CORRECTA!
-# Importamos la instancia 'supabase' desde nuestro archivo central de extensiones.
 from ..extensions import supabase
 
 class User:
@@ -13,7 +11,6 @@ class User:
         """
         El constructor recibe el user_id (UUID de autenticación) del usuario.
         """
-        # ¡LA REFERENCIA CORRECTA! Usamos supabase.client.
         self.db = supabase.client
         self.user_id = user_id
 

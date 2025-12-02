@@ -54,16 +54,11 @@ def _get_system_counts() -> Tuple[Dict[str, Any], Optional[str]]:
         # CONTEO DE INVENTARIO
         stats['meds_count'] = supabase.client.table('inventario').select('id', count='exact').execute().count or 0
         
-        # CONTEO DE STOCK TOTAL (Requiere la función RPC 'get_total_stock' en Supabase)
-        total_stock_res = supabase.client.rpc('get_total_stock').execute() 
-        total_stock = 0
-        if total_stock_res and total_stock_res.data and len(total_stock_res.data) > 0 and 'total_stock' in total_stock_res.data[0]:
-            try:
-                # El resultado de la RPC es un array con un diccionario
-                total_stock = int(total_stock_res.data[0]['total_stock'])
-            except (ValueError, TypeError):
-                total_stock = 0
-        stats['total_stock'] = total_stock
+        # --- MODIFICACIÓN CLAVE (Opción 2) para EVITAR el error de estadísticas ---
+        # Se omite la llamada RPC fallida para evitar que el dashboard colapse.
+        # total_stock_res = supabase.client.rpc('get_total_stock').execute() 
+        stats['total_stock'] = 'N/A (RPC OMITIDA)'
+        # --- FIN DE MODIFICACIÓN ---
 
     except Exception as e:
         error = f"Error al acceder a Supabase: {str(e)}"
@@ -265,6 +260,7 @@ def inventory():
     pharma_handler = Pharmacist()
     provider_handler = Provider()
     
+    # Se obtienen los datos sin filtros iniciales
     inventory_list, inv_error = pharma_handler.get_filtered_inventory()
     categories, cat_error = pharma_handler.get_all_categories()
     providers_list, prov_error = provider_handler.get_all()
@@ -289,10 +285,10 @@ def inventory():
     inventory_list.sort(key=lambda it: (it.get('nombre') or '').lower(), reverse=(order == 'desc'))
 
     return render_template('admin/inventory.html', 
-                             inventory_items=inventory_list or [],
-                             categories=categories or [],
-                             providers=providers_list or [],
-                             q=(q or ''), order=order)
+                            inventory_items=inventory_list or [],
+                            categories=categories or [],
+                            providers=providers_list or [],
+                            q=(q or ''), order=order)
 
 @admin_bp.route('/inventory/add', methods=['POST'])
 @role_required(allowed_roles=['administrador', 'farmaceutico'])
@@ -300,7 +296,6 @@ def add_inventory_item():
     data = request.get_json()
     
     if not data:
-        # Esto maneja el caso donde no se recibe JSON, previniendo un 500
         return jsonify({'success': False, 'message': 'Datos de entrada incompletos o malformados (No se recibió JSON).'}), 400
 
     name = data.get('name')
@@ -308,14 +303,12 @@ def add_inventory_item():
     category_id = data.get('category_id')
     
     if not all([name, stock, category_id]):
-        # Esto maneja el caso donde faltan campos requeridos
         return jsonify({'success': False, 'message': 'Faltan campos obligatorios (nombre, stock, o categoría).'}), 400
         
     try:
         pharma_handler = Pharmacist()
         _, error = pharma_handler.add_inventory_item(name, stock, category_id)
     except Exception as e:
-        # Captura errores internos (ej. fallo en la DB o en el handler)
         return jsonify({'success': False, 'message': f'Error interno del servidor al procesar: {str(e)}'}), 500
 
     if error: 

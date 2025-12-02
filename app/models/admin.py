@@ -41,7 +41,6 @@ class Admin:
             auth_res = self.db.auth.sign_up({"email": email, "password": password})
 
             if not auth_res.user:
-                # Esto es poco común si no se lanza una excepción, pero es una buena verificación
                 return None, "Fallo al crear usuario en Auth (usuario no retornado)."
             
             user_id = auth_res.user.id
@@ -54,10 +53,8 @@ class Admin:
             }).execute()
 
             # 4. Inserción en la tabla de Pacientes (Condicional)
-            # CORRECCIÓN: Usamos ROLE_PACIENTE_ID = 4 para consistencia (Punto 1)
             if role_id_int == ROLE_PACIENTE_ID: 
                 self.db.table('pacientes').insert({
-                    # Asume que la tabla 'pacientes' usa user_id como FK
                     "user_id": user_id,
                     "nombre_completo": full_name, 
                     "info_contacto": email, 
@@ -104,10 +101,6 @@ class Admin:
 
     def delete_user_by_id(self, user_id):
         try:
-            # Al eliminar el usuario de Auth, las RLS (Row Level Security) 
-            # de Supabase deberían encargarse de eliminar la entrada en 'perfiles' por cascada.
-            # Si no tienes configurada la cascada, DEBERÍAS eliminar primero de 'perfiles'.
-            
             # 1. Eliminar de Auth (lo que dispara la eliminación de la DB si tienes cascada)
             self.db.auth.admin.delete_user(user_id)
             return True, None
