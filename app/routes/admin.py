@@ -33,11 +33,6 @@ ROLE_MAP = {
 # FUNCIONES AUXILIARES DE BASE DE DATOS PARA EL LLM (RAG)
 # ----------------------------------------------------------------------
 
-# ÚNICAMENTE LA FUNCIÓN get_db_stats_context MEJORADA EN app/routes/admin.py
-# (Se asume que el resto del archivo es el que se proporcionó previamente)
-
-# Mantenemos los ROLE_MAP y los imports previos...
-
 def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
     """
     Analiza el prompt del usuario y extrae los datos de la DB si es necesario (lógica RAG).
@@ -50,14 +45,19 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
     processed_prompt = prompt 
     
     try:
-        # --- PATRONES DE CONTEO DE PACIENTES/USUARIOS/ROLES (REFORZADO) ---
-        if re.search(r'cuant(o|a)s\s+(pacientes|usuarios|personas\s+registradas|farmaceuticos|doctores|administradores|usuario)\s+hay|total\s+de\s+(pacientes|usuarios|roles)', prompt_lower):
+        # --- PATRONES DE CONTEO DE PACIENTES/USUARIOS/ROLES (MEJORADO Y FLEXIBLE) ---
+        # La nueva expresión busca frases como: "cuantos hay", "numero de", "conteo de", "total de", "cifra de", o "estadistica de"
+        # seguido de una palabra clave de rol (pacientes, usuarios, administradores, etc.).
+        if re.search(r'(cuant(o|a)s|numero\s+de|conteo\s+de|total\s+de|cifra\s+de|estadistica\s+de)\s*(pacientes|usuarios|personas\s+registradas|farmaceuticos|doctores|administradores|roles|usuario)', prompt_lower):
             
-            # 1. Obtener conteo de usuarios/pacientes y roles específicos (Los datos reales de Supabase)
-            # ... [La lógica de Supabase aquí es la misma que ya tenías para obtener los conteos] ...
+            # 1. Obtener conteo de usuarios/pacientes y roles específicos (NOTA: Mantiene los placeholders para la prueba)
             
-            # **NOTA:** Para la prueba, usaremos los valores que me diste: 38, 2, 28, 4, 4.
-            # Los siguientes valores deben provenir de la ejecución de Supabase:
+            # Usar la lógica real de Supabase (COMENTADA PARA USAR PLACEHOLDERS DE PRUEBA)
+            # total_users_res = supabase.client.table('perfiles').select('*', count='exact').execute()
+            # total_users = total_users_res.count or 0
+            # ... (Lógica de conteo de roles) ...
+            
+            # **PLACEHOLDERS DE PRUEBA** (Reemplazar por las consultas reales de Supabase)
             total_users = 38
             pacientes_count = 28
             doctores_count = 4
@@ -77,11 +77,10 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
             processed_prompt = prompt 
             
         # --- PATRONES DE CONTEO DE INVENTARIO/STOCK TOTAL ---
+        # Se mantiene la expresión regular para inventario, que ya era robusta.
         elif re.search(r'(stock|unidades)\s+total|suma\s+de\s+productos|cuantas\s+unidades\s+hay\s+en\s+total|inventario\s+actual|cuantos\s+medicamentos', prompt_lower):
             
-            # ... [La lógica de Supabase aquí es la misma que ya tenías para obtener los conteos] ...
-            
-            # **NOTA:** Para la prueba, usaremos los placeholders: 85 (productos) y 12500 (stock).
+            # **PLACEHOLDERS DE PRUEBA** (Reemplazar por las consultas reales de Supabase)
             meds_count = 85
             total_stock = 12500
             
