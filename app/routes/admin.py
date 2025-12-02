@@ -5,7 +5,7 @@ from io import StringIO
 from flask import Response
 from datetime import datetime
 import re
-from typing import Optional
+from typing import Optional, Dict, Any, Tuple
 
 from ..decorators import role_required
 from ..extensions import supabase
@@ -30,14 +30,56 @@ ROLE_MAP = {
     'paciente': 4
 }
 # ----------------------------------------------------------------------
-# FUNCIONES AUXILIARES DE BASE DE DATOS PARA EL LLM (RAG)
+# FUNCIONES AUXILIARES DE BASE DE DATOS
 # ----------------------------------------------------------------------
+
+def _get_system_counts() -> Tuple[Dict[str, Any], Optional[str]]:
+    """
+    Obtiene conteos del sistema (usuarios y medicamentos) de Supabase.
+    Esta función centraliza la lógica de conteo para RAG y Dashboard.
+    """
+    stats = {}
+    error = None
+    try:
+        # CONTEO DE USUARIOS POR ROL
+        total_users_res = supabase.client.table('perfiles').select('id', count='exact').execute()
+        stats['total_users'] = total_users_res.count or 0
+        
+        # Obtenemos los conteos por rol
+        stats['admin_count'] = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', ROLE_MAP['administrador']).execute().count or 0
+        stats['doctores_count'] = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', ROLE_MAP['doctor']).execute().count or 0
+        stats['farmaceuticos_count'] = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', ROLE_MAP['farmaceutico']).execute().count or 0
+        stats['pacientes_count'] = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', ROLE_MAP['paciente']).execute().count or 0
+        
+        # CONTEO DE INVENTARIO
+        stats['meds_count'] = supabase.client.table('inventario').select('id', count='exact').execute().count or 0
+        
+        # CONTEO DE STOCK TOTAL (Requiere la función RPC 'get_total_stock' en Supabase)
+        total_stock_res = supabase.client.rpc('get_total_stock').execute() 
+        total_stock = 0
+        if total_stock_res and total_stock_res.data and len(total_stock_res.data) > 0 and 'total_stock' in total_stock_res.data[0]:
+            try:
+                # El resultado de la RPC es un array con un diccionario
+                total_stock = int(total_stock_res.data[0]['total_stock'])
+            except (ValueError, TypeError):
+                total_stock = 0
+        stats['total_stock'] = total_stock
+
+    except Exception as e:
+        error = f"Error al acceder a Supabase: {str(e)}"
+        # Rellena con N/A si hay un error
+        stats = {
+            'total_users': 'N/A', 'admin_count': 'N/A', 'doctores_count': 'N/A',
+            'farmaceuticos_count': 'N/A', 'pacientes_count': 'N/A',
+            'meds_count': 'N/A', 'total_stock': 'N/A'
+        }
+
+    return stats, error
+
 
 def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
     """
     Analiza el prompt del usuario y extrae los datos de la DB si es necesario (lógica RAG).
-    
-    Returns: (db_context: str | None, processed_prompt: str)
     """
     
     prompt_lower = prompt.lower().strip()
@@ -45,56 +87,39 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
     processed_prompt = prompt 
     
     try:
-        # --- PATRONES DE CONTEO DE PACIENTES/USUARIOS/ROLES (MEJORADO Y FLEXIBLE) ---
-        # La nueva expresión busca frases como: "cuantos hay", "numero de", "conteo de", "total de", "cifra de", o "estadistica de"
-        # seguido de una palabra clave de rol (pacientes, usuarios, administradores, etc.).
+        # Obtener todos los conteos en una sola llamada centralizada
+        stats, error_db = _get_system_counts()
+        
+        if error_db and "Error al acceder a Supabase" in error_db:
+             raise Exception("Error técnico") # Forzar el manejo de error general
+
+        # --- PATRONES DE CONTEO DE PACIENTES/USUARIOS/ROLES ---
         if re.search(r'(cuant(o|a)s|numero\s+de|conteo\s+de|total\s+de|cifra\s+de|estadistica\s+de)\s*(pacientes|usuarios|personas\s+registradas|farmaceuticos|doctores|administradores|roles|usuario)', prompt_lower):
             
-            # 1. Obtener conteo de usuarios/pacientes y roles específicos (NOTA: Mantiene los placeholders para la prueba)
-            
-            # Usar la lógica real de Supabase (COMENTADA PARA USAR PLACEHOLDERS DE PRUEBA)
-            # total_users_res = supabase.client.table('perfiles').select('*', count='exact').execute()
-            # total_users = total_users_res.count or 0
-            # ... (Lógica de conteo de roles) ...
-            
-            # **PLACEHOLDERS DE PRUEBA** (Reemplazar por las consultas reales de Supabase)
-            total_users = 38
-            pacientes_count = 28
-            doctores_count = 4
-            farmaceuticos_count = 4
-            admin_count = 2
-            sum_of_roles = 38 
-
-            # 2. Construir el contexto para el LLM (Claro y Asertivo)
+            # 2. Construir el contexto para el LLM con datos REALES de 'stats'
             db_context = (
-                f"El número TOTAL de usuarios registrados en el sistema es **{total_users}**. "
-                f"El conteo DETALLADO por roles es: **Administradores={admin_count}**, **Pacientes={pacientes_count}**, "
-                f"**Doctores={doctores_count}**, **Farmacéuticos={farmaceuticos_count}**. "
-                f"La suma de todos los roles es {sum_of_roles}. "
+                f"El número TOTAL de usuarios registrados en el sistema es **{stats['total_users']}**. "
+                f"El conteo DETALLADO por roles es: **Administradores={stats['admin_count']}**, **Pacientes={stats['pacientes_count']}**, "
+                f"**Doctores={stats['doctores_count']}**, **Farmacéuticos={stats['farmaceuticos_count']}**. "
+                f"La suma de todos los roles es {stats['total_users']}. "
                 "Responde con la información pedida de forma concisa."
             )
             
             processed_prompt = prompt 
             
         # --- PATRONES DE CONTEO DE INVENTARIO/STOCK TOTAL ---
-        # Se mantiene la expresión regular para inventario, que ya era robusta.
         elif re.search(r'(stock|unidades)\s+total|suma\s+de\s+productos|cuantas\s+unidades\s+hay\s+en\s+total|inventario\s+actual|cuantos\s+medicamentos', prompt_lower):
             
-            # **PLACEHOLDERS DE PRUEBA** (Reemplazar por las consultas reales de Supabase)
-            meds_count = 85
-            total_stock = 12500
-            
-            # 2. Construir el contexto para el LLM
+            # 2. Construir el contexto para el LLM con datos REALES de 'stats'
             db_context = (
-                f"El total de productos/medicamentos diferentes en el inventario es {meds_count}. "
-                f"El stock total combinado de todas las unidades es {total_stock}. "
+                f"El total de productos/medicamentos diferentes en el inventario es {stats['meds_count']}. "
+                f"El stock total combinado de todas las unidades es {stats['total_stock']}. "
                 "Responde con la información pedida de forma concisa."
             )
             processed_prompt = prompt
 
         # --- RECHAZO DE BÚSQUEDA ESPECÍFICA (REFORZADO) ---
         elif re.search(r'informacion\s+de\s+(irvin|carlos\s+perez|persona|correo\s+electronico\s+de|datos\s+personales)', prompt_lower):
-            # ⚠️ El contexto ahora le da la directiva exacta de seguridad al LLM
             db_context = "El usuario está preguntando por DATOS PERSONALES (ej: correo/nombre específico). Debes rechazar la petición invocando la política de SEGURIDAD y PRIVACIDAD de Cuida Mas."
             processed_prompt = "El usuario ha pedido información personal, rechaza la solicitud citando las políticas de seguridad y privacidad, y menciona que solo puedes dar estadísticas generales."
         
@@ -109,25 +134,23 @@ def get_db_stats_context(prompt: str) -> tuple[Optional[str], str]:
     return db_context, processed_prompt
 
 # ----------------------------------------------------------------------
-# RUTAS DE ADMINISTRADOR (EL CÓDIGO RESTANTE DE LAS RUTAS)
+# RUTAS DE ADMINISTRADOR
 # ----------------------------------------------------------------------
 
 @admin_bp.route('/dashboard')
 @role_required(allowed_roles=['administrador'])
 def dashboard():
-    try:
-        user_count_res = supabase.client.table('perfiles').select('id', count='exact').execute()
-        doctor_count_res = supabase.client.table('perfiles').select('id', count='exact').eq('id_de_rol', 2).execute()
-        meds_count_res = supabase.client.table('inventario').select('id', count='exact').execute()
-        stats = {
-            'total_users': user_count_res.count or 0,
-            'total_doctors': doctor_count_res.count or 0,
-            'total_meds': meds_count_res.count or 0
-        }
-    except Exception as e:
+    stats, error = _get_system_counts()
+    if error and stats['total_users'] == 'N/A':
         flash("Error al obtener las estadísticas del sistema.", "danger")
-        stats = {'total_users': 'N/A', 'total_doctors': 'N/A', 'total_meds': 'N/A'}
-    return render_template('admin/dashboard.html', stats=stats)
+    
+    # Mapea los nombres de las keys de la función auxiliar a las keys esperadas por la plantilla
+    display_stats = {
+        'total_users': stats['total_users'],
+        'total_doctors': stats['doctores_count'],
+        'total_meds': stats['meds_count']
+    }
+    return render_template('admin/dashboard.html', stats=display_stats)
 
 @admin_bp.route('/users')
 @role_required(allowed_roles=['administrador'])
@@ -275,12 +298,31 @@ def inventory():
 @role_required(allowed_roles=['administrador', 'farmaceutico'])
 def add_inventory_item():
     data = request.get_json()
-    pharma_handler = Pharmacist()
-    _, error = pharma_handler.add_inventory_item(data.get('name'), data.get('stock'), data.get('category_id'))
     
+    if not data:
+        # Esto maneja el caso donde no se recibe JSON, previniendo un 500
+        return jsonify({'success': False, 'message': 'Datos de entrada incompletos o malformados (No se recibió JSON).'}), 400
+
+    name = data.get('name')
+    stock = data.get('stock')
+    category_id = data.get('category_id')
+    
+    if not all([name, stock, category_id]):
+        # Esto maneja el caso donde faltan campos requeridos
+        return jsonify({'success': False, 'message': 'Faltan campos obligatorios (nombre, stock, o categoría).'}), 400
+        
+    try:
+        pharma_handler = Pharmacist()
+        _, error = pharma_handler.add_inventory_item(name, stock, category_id)
+    except Exception as e:
+        # Captura errores internos (ej. fallo en la DB o en el handler)
+        return jsonify({'success': False, 'message': f'Error interno del servidor al procesar: {str(e)}'}), 500
+
     if error: 
         return jsonify({'success': False, 'message': str(error)}), 400
+        
     return jsonify({'success': True, 'message': 'Item añadido al inventario con éxito.'})
+
 
 @admin_bp.route('/inventory/restock', methods=['POST'])
 @role_required(allowed_roles=['administrador', 'farmaceutico'])
@@ -288,6 +330,10 @@ def restock_inventory():
     data = request.get_json()
     med_id = data.get('id')
     quantity = data.get('quantity')
+    
+    if not all([med_id, quantity]):
+        return jsonify({'success': False, 'message': 'Faltan datos (ID o cantidad).'}), 400
+
     pharma_handler = Pharmacist()
     _, error = pharma_handler.restock_medicine(med_id, quantity)
     if error:
