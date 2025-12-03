@@ -1,4 +1,3 @@
-<!-- app/templates/doctor/create_prescription_form.html -->
 {% extends 'layout/base.html' %}
 {% block title %}Crear Nueva Receta{% endblock %}
 {% block content %}
@@ -16,21 +15,38 @@
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                        <div class="alert alert-{{ category }}">{{ message | safe }}</div>
                     {% endfor %}
                 {% endif %}
             {% endwith %}
             
             <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label for="nombre_paciente" class="form-label">Nombre Completo del Paciente</label>
-                    <input type="text" id="nombre_paciente" name="nombre_paciente" class="form-control" required>
+                <!-- CAMPO MODIFICADO PARA AUTOCOMPLETAR -->
+                <div class="col-md-6 mb-3 position-relative">
+                    <label for="patient_name" class="form-label">Nombre Completo del Paciente</label>
+                    <input type="text" 
+                           id="patient_name" 
+                           name="patient_name" 
+                           class="form-control" 
+                           required 
+                           placeholder="Comience a escribir el nombre del paciente..."
+                           value="{{ patient_name if patient_name is defined else '' }}">
+                    
+                    {# CONTENEDOR PARA LAS SUGERENCIAS #}
+                    <div id="patient_suggestions" class="list-group position-absolute w-100" style="z-index: 1000; max-height: 250px; overflow-y: auto; border: none;"></div>
+                    
+                    {# INPUT OCULTO PARA ENVIAR EL ID DEL PACIENTE #}
+                    <input type="hidden" id="id_paciente" name="id_paciente" value="{{ id_paciente if id_paciente is defined else '' }}">
                 </div>
+                
+                <!-- CURP del Paciente -->
                 <div class="col-md-6 mb-3">
                     <label for="curp_paciente" class="form-label">CURP del Paciente</label>
                     <input type="text" id="curp_paciente" name="curp_paciente" class="form-control" 
-                           maxlength="18" minlength="18" required
-                           style="text-transform:uppercase" onkeyup="this.value = this.value.toUpperCase();">
+                            maxlength="18" minlength="18" required
+                            placeholder="Ingrese CURP o seleccione un paciente"
+                            style="text-transform:uppercase" onkeyup="this.value = this.value.toUpperCase();"
+                            value="{{ curp_paciente if curp_paciente is defined else '' }}">
                 </div>
             </div>
             <div class="row">
@@ -42,16 +58,14 @@
                     <label for="altura_paciente_cm" class="form-label">Altura (cm)</label>
                     <input type="number" id="altura_paciente_cm" name="altura_paciente_cm" class="form-control" placeholder="Ej: 178">
                 </div>
-                <!-- --- INICIO DE LA MODIFICACIÓN: CAMPO 'sexo' RESTAURADO --- -->
-                 <div class="col-md-4 mb-3">
+                <div class="col-md-4 mb-3">
                     <label for="sexo_paciente" class="form-label">Sexo</label>
                     <select id="sexo_paciente" name="sexo_paciente" class="form-select">
-                        <option value="Masculino" selected>Masculino</option>
-                        <option value="Femenino">Femenino</option>
-                        <option value="Otro">Otro</option>
+                        <option value="Masculino" {% if sexo_paciente == 'Masculino' %}selected{% endif %}>Masculino</option>
+                        <option value="Femenino" {% if sexo_paciente == 'Femenino' %}selected{% endif %}>Femenino</option>
+                        <option value="Otro" {% if sexo_paciente == 'Otro' %}selected{% endif %}>Otro</option>
                     </select>
                 </div>
-                <!-- --- FIN DE LA MODIFICACIÓN --- -->
             </div>
         </div>
     </div>
@@ -62,7 +76,7 @@
         </div>
         <div class="card-body">
             <div class="row">
-                 <div class="col-md-6 mb-3">
+                <div class="col-md-6 mb-3">
                     <label for="cedula_profesional" class="form-label">Cédula Profesional</label>
                     <input type="text" id="cedula_profesional" name="cedula_profesional" class="form-control" required>
                 </div>
@@ -73,11 +87,11 @@
             </div>
             <div class="mb-3">
                 <label for="tratamiento" class="form-label">Tratamiento</label>
-                <textarea id="tratamiento" name="tratamiento" class="form-control" rows="8" required placeholder="Ej: ..."></textarea>
+                <textarea id="tratamiento" name="tratamiento" class="form-control" rows="8" required placeholder="Ej: Ibuprofeno 400mg..."></textarea>
             </div>
             <div class="mb-3">
                 <label for="recomendaciones" class="form-label">Recomendaciones Adicionales</label>
-                <textarea id="recomendaciones" name="recomendaciones" class="form-control" rows="4" placeholder="Ej: ..."></textarea>
+                <textarea id="recomendaciones" name="recomendaciones" class="form-control" rows="4" placeholder="Ej: Evitar el alcohol..."></textarea>
             </div>
         </div>
     </div>
@@ -87,4 +101,90 @@
         <button type="submit" class="btn btn-primary">Generar Receta</button>
     </div>
 </form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputName = document.getElementById('patient_name');
+        const hiddenId = document.getElementById('id_paciente');
+        const inputCurp = document.getElementById('curp_paciente');
+        const suggestionsContainer = document.getElementById('patient_suggestions');
+        let debounceTimer;
+
+        // Función para buscar pacientes
+        async function searchPatients(query) {
+            if (query.length < 3) {
+                suggestionsContainer.innerHTML = '';
+                return;
+            }
+
+            try {
+                const response = await fetch(`{{ url_for('doctor.search_patients') }}?q=${encodeURIComponent(query)}`);
+                const patients = await response.json();
+
+                if (patients.error) {
+                    console.error("Error del servidor:", patients.error);
+                    renderSuggestions([]);
+                    return;
+                }
+                renderSuggestions(patients);
+
+            } catch (error) {
+                console.error("Error de red:", error);
+                suggestionsContainer.innerHTML = `<button type="button" class="list-group-item list-group-item-danger">Error de conexión.</button>`;
+            }
+        }
+
+        // Función para dibujar sugerencias
+        function renderSuggestions(patients) {
+            suggestionsContainer.innerHTML = '';
+            
+            if (patients.length === 0) {
+                suggestionsContainer.innerHTML = `<button type="button" class="list-group-item list-group-item-secondary disabled">No se encontraron coincidencias.</button>`;
+                return;
+            }
+
+            patients.forEach(patient => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.classList.add('list-group-item', 'list-group-item-action', 'py-2');
+                button.innerHTML = `
+                    <span class="fw-bold">${patient.nombre_completo}</span>
+                    <br><small class="text-muted">CURP: ${patient.curp}</small>
+                `;
+                
+                button.addEventListener('click', function() {
+                    inputName.value = patient.nombre_completo;
+                    hiddenId.value = patient.id; // ID para el backend
+                    inputCurp.value = patient.curp;
+                    suggestionsContainer.innerHTML = '';
+                    inputName.focus();
+                });
+
+                suggestionsContainer.appendChild(button);
+            });
+        }
+
+        inputName.addEventListener('keyup', function() {
+            clearTimeout(debounceTimer);
+            const query = this.value.trim();
+            
+            if (query.length < 3) {
+                hiddenId.value = ''; 
+                suggestionsContainer.innerHTML = '';
+            }
+
+            if (query.length >= 3) {
+                debounceTimer = setTimeout(() => {
+                    searchPatients(query);
+                }, 300); 
+            }
+        });
+        
+        document.addEventListener('click', function(event) {
+            if (!inputName.contains(event.target) && !suggestionsContainer.contains(event.target)) {
+                suggestionsContainer.innerHTML = '';
+            }
+        });
+    });
+</script>
 {% endblock %}

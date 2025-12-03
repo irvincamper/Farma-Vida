@@ -1,10 +1,15 @@
 # app/models/pharmacist.py
 from ..supabase_admin import supabase_admin_client
 from flask import g # Importante para registrar quién hace los cambios
+from datetime import datetime # <--- ¡IMPORTACIÓN CRÍTICA AÑADIDA!
 
 class Pharmacist:
     def __init__(self):
         self.db = supabase_admin_client
+
+    # -------------------------------------------------------------------
+    # ESTADÍSTICAS DEL DASHBOARD
+    # -------------------------------------------------------------------
 
     def get_dashboard_stats(self):
         try:
@@ -20,8 +25,96 @@ class Pharmacist:
         except Exception as e:
             return {}, str(e)
 
-    # --- INICIO DE LA MODIFICACIÓN: MÉTODO AÑADIDO ---
-    # Esta es la función que tu ruta 'doctor.py' estaba buscando.
+    # -------------------------------------------------------------------
+    # GESTIÓN DE INVENTARIO (Añadidas funciones para 'Añadir Item')
+    # -------------------------------------------------------------------
+
+    def add_inventory_item(self, name, stock, category_id, provider_id=None):
+        """Añade un nuevo ítem de inventario y registra el historial."""
+        try:
+            stock_int = int(stock)
+            category_int = int(category_id)
+            
+            if stock_int <= 0:
+                return False, "El stock inicial debe ser mayor que cero."
+
+            # Crear el diccionario de datos base
+            data_to_insert = {
+                "nombre": name,
+                "stock": stock_int,
+                "categoria_id": category_int, 
+                "created_at": datetime.now().isoformat()
+            }
+
+            # Si provider_id existe y es un número válido, lo añadimos al diccionario.
+            if provider_id and str(provider_id).isdigit():
+                # **DEJADO EN 'proveedor_id' TEMPORALMENTE** para probar una clave más antes de desactivarlo.
+                try:
+                    data_to_insert['proveedor_id'] = int(provider_id)
+                except Exception as e:
+                    data_to_insert['id_proveedor'] = int(provider_id)
+                    
+            
+            response = self.db.table('inventario').insert(data_to_insert).execute()
+            
+            new_item_id = response.data[0]['id'] if response.data else None
+            
+            if new_item_id:
+                # Registro en historial_inventario
+                self.db.table('historial_inventario').insert({
+                    'producto_id': new_item_id,
+                    'usuario_id': g.profile['id'], 
+                    'accion': 'Adición Inicial',
+                    'valor_anterior': 'N/A',
+                    'valor_nuevo': f"Stock: {stock_int}"
+                }).execute()
+            
+            return True, None
+            
+        except ValueError:
+            return False, "Error de tipo: Stock o ID de categoría/proveedor deben ser números enteros."
+        except Exception as e:
+            if 'foreign key constraint' in str(e).lower():
+                return False, "Categoría o Proveedor no existen (clave externa)."
+            # Devolvemos el error específico para el diagnóstico:
+            return False, f"Error de la base de datos al añadir item: {str(e)}"
+        
+    def restock_medicine(self, med_id, quantity):
+        """Actualiza el stock de un medicamento existente (reabastecimiento)."""
+        try:
+            med_id_int = int(med_id)
+            quantity_int = int(quantity)
+
+            res = self.db.table('inventario').select('stock').eq('id', med_id_int).maybe_single().execute()
+            current = res.data
+            
+            if not current:
+                return False, "Medicamento no encontrado."
+                
+            old_stock = current['stock']
+            new_stock = old_stock + quantity_int
+            
+            self.db.table('inventario').update({'stock': new_stock}).eq('id', med_id_int).execute()
+            
+            self.db.table('historial_inventario').insert({
+                'producto_id': med_id_int,
+                'usuario_id': g.profile['id'],
+                'accion': 'Reabastecimiento',
+                'valor_anterior': f"Stock: {old_stock}",
+                'valor_nuevo': f"Stock: {new_stock} (Adición: +{quantity_int})"
+            }).execute()
+            
+            return True, None
+
+        except ValueError:
+            return False, "ID de medicamento y cantidad deben ser números enteros."
+        except Exception as e:
+            return False, f"Error al reabastecer: {str(e)}"
+    
+    # -------------------------------------------------------------------
+    # FUNCIONES DE LECTURA DE DATOS
+    # -------------------------------------------------------------------
+
     def get_full_inventory(self):
         """
         Obtiene una lista completa de todos los medicamentos del inventario.
@@ -34,7 +127,6 @@ class Pharmacist:
             print(f"Error al obtener el inventario completo: {e}")
             return [], str(e)
 
-    # También añadimos una función para obtener todos los suministros, por si la necesitas.
     def get_all_supplies(self):
         """
         Obtiene una lista completa de todos los suministros.
@@ -45,7 +137,6 @@ class Pharmacist:
         except Exception as e:
             print(f"Error al obtener todos los suministros: {e}")
             return [], str(e)
-    # --- FIN DE LA MODIFICACIÓN ---
 
     def get_filtered_inventory(self, search_term='', category_id=None):
         try:
@@ -58,6 +149,23 @@ class Pharmacist:
             return response.data, None
         except Exception as e:
             return [], str(e)
+            
+    # -------------------------------------------------------------------
+    # GESTIÓN DE PACIENTES (Añadida la función faltante)
+    # -------------------------------------------------------------------
+    
+    def get_all_patients(self):
+        """Obtiene la lista completa de pacientes."""
+        try:
+            # Supabase tabla 'pacientes'
+            response = self.db.table('pacientes').select('*').order('nombre_completo').execute()
+            return response.data, None
+        except Exception as e:
+            return [], f"Error al obtener pacientes: {str(e)}"
+            
+    # -------------------------------------------------------------------
+    # FUNCIONES DE INVENTARIO RESTANTES
+    # -------------------------------------------------------------------
 
     def update_medicine(self, med_id, new_stock, new_name, new_category_id):
         try:

@@ -1,30 +1,76 @@
 {% extends 'layout/base.html' %}
 {% block title %}Consultar Recetas{% endblock %}
+
 {% block content %}
     <header class="header">
-        <h1><i class="fas fa-file-prescription"></i> Consultar Recetas</h1>
+        <h1><i class="fas fa-prescription-bottle-alt"></i> Consultar Recetas</h1>
         <p>Lista de todas las recetas emitidas.</p>
     </header>
-    <div class="card">
-        <div class="card-header"><h5 class="mb-0">Recetas</h5></div>
-        <div class="card-body">
-             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead><tr><th>Paciente (Ejemplo)</th><th>Fecha</th><th>Estado</th><th class="text-end">Acción</th></tr></thead>
-                    <tbody>
-                        <tr><td>María Rodríguez</td><td>2025-08-08</td><td><span class="badge bg-success">Activa</span></td><td class="text-end"><button class="btn btn-sm btn-outline-primary btn-ver" data-id="1">Ver</button></td></tr>
-                        <tr><td>Juan Pérez</td><td>2025-08-07</td><td><span class="badge bg-secondary">Finalizada</span></td><td class="text-end"><button class="btn btn-sm btn-outline-primary btn-ver" data-id="2">Ver</button></td></tr>
-                    </tbody>
-                </table>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Paciente</th>
+                                    <th>Doctor</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th class="text-end">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if prescriptions %}
+                                    {% for recipe in prescriptions %}
+                                    
+                                    {# --- FILTRO AÑADIDO: Solo mostrar si tiene datos completos --- #}
+                                    {% if recipe.paciente and recipe.paciente.nombre_completo and recipe.doctor and recipe.doctor.nombre_completo %}
+                                    <tr>
+                                        <td>{{ recipe.id }}</td>
+                                        <td>{{ recipe.paciente.nombre_completo if recipe.paciente else "N/A" }}</td>
+                                        <td>{{ recipe.doctor.nombre_completo if recipe.doctor else "N/A" }}</td>
+                                        <td>{{ recipe.created_at | default("N/A") | truncate(10, True, '') }}</td>
+                                        <td>
+                                            {% if recipe.estado == 'activa' %}
+                                                <span class="badge bg-success">Activa</span>
+                                            {% elif recipe.estado == 'finalizada' %}
+                                                <span class="badge bg-secondary">Finalizada</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">{{ recipe.estado | default('Pendiente') }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            {# El JavaScript ya está configurado para llamar a la ruta de detalle #}
+                                            <button class="btn btn-sm btn-outline-primary btn-ver" data-id="{{ recipe.id }}">Ver</button>
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                    
+                                    {% endfor %}
+                                {% else %}
+                                     <tr>
+                                        <td colspan="6" class="text-center bg-light fw-bold">No se encontraron recetas.</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.btn-ver').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    alert('Ver detalles de la receta ID: ' + btn.dataset.id);
-                    // window.location.href = '/pharmacist/prescription/' + btn.dataset.id;
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const recipeId = this.dataset.id;
+                    // Redirige a la ruta correcta usando url_for de Flask
+                    window.location.href = `{{ url_for('pharmacist.view_prescription_details', prescription_id=0) }}`.replace('0', recipeId);
                 });
             });
         });

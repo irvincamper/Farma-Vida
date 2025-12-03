@@ -47,7 +47,9 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-end">
+                                    {# Botones con clases y data-id para el JavaScript #}
                                     <button class="btn btn-sm btn-outline-primary btn-edit" data-id="{{ item.id }}">Editar</button>
+                                    
                                     {% if item.stock <= 10 %}
                                     <button class="btn btn-sm btn-outline-warning btn-reponer" data-id="{{ item.id }}">Reponer</button>
                                     {% endif %}
@@ -55,7 +57,7 @@
                             </tr>
                             {% endfor %}
                         
-                        {# Si no hay datos reales, mostramos los ejemplos #}
+                        {# Si no hay datos reales, mostramos los ejemplos (Mantengo tu lógica de ejemplo) #}
                         {% else %}
                             <tr><td colspan="5" class="text-center bg-light fw-bold">Mostrando Datos de Ejemplo</td></tr>
                             <tr>
@@ -64,8 +66,8 @@
                                 <td>42 cajas</td>
                                 <td><span class="badge bg-success">Disponible</span></td>
                                 <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-primary">Editar</button>
-                                    <button class="btn btn-sm btn-outline-warning">Reponer</button>
+                                    <button class="btn btn-sm btn-outline-primary btn-edit" data-id="101">Editar</button>
+                                    <button class="btn btn-sm btn-outline-warning btn-reponer" data-id="101">Reponer</button>
                                 </td>
                             </tr>
                             <tr>
@@ -74,8 +76,8 @@
                                 <td>8 cajas</td>
                                 <td><span class="badge bg-warning text-dark">Bajo Stock</span></td>
                                 <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-primary">Editar</button>
-                                    <button class="btn btn-sm btn-outline-warning">Reponer</button>
+                                    <button class="btn btn-sm btn-outline-primary btn-edit" data-id="103">Editar</button>
+                                    <button class="btn btn-sm btn-outline-warning btn-reponer" data-id="103">Reponer</button>
                                 </td>
                             </tr>
                              <tr>
@@ -84,8 +86,8 @@
                                 <td>5 cajas</td>
                                 <td><span class="badge bg-danger">Crítico</span></td>
                                 <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-primary">Editar</button>
-                                    <button class="btn btn-sm btn-outline-warning">Reponer</button>
+                                    <button class="btn btn-sm btn-outline-primary btn-edit" data-id="104">Editar</button>
+                                    <button class="btn btn-sm btn-outline-warning btn-reponer" data-id="104">Reponer</button>
                                 </td>
                             </tr>
                         {% endif %}
@@ -96,16 +98,49 @@
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // --- Lógica para el botón EDITAR ---
             document.querySelectorAll('.btn-edit').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    alert('Editar producto ID: ' + btn.dataset.id);
-                    // window.location.href = '/pharmacist/edit/' + btn.dataset.id;
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const itemId = this.dataset.id;
+                    // Redirigir a la nueva ruta de edición
+                    window.location.href = `{{ url_for('pharmacist.edit_medicine_item', med_id=0) }}`.replace('0', itemId);
                 });
             });
+
+            // --- Lógica para el botón REPONER ---
             document.querySelectorAll('.btn-reponer').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    alert('Reponer producto ID: ' + btn.dataset.id);
-                    // window.location.href = '/pharmacist/reponer/' + btn.dataset.id;
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const itemId = this.dataset.id;
+                    
+                    let quantity = prompt("Ingrese la cantidad a reponer para el producto ID " + itemId + ":");
+                    
+                    // 1. Validar y cancelar si es nulo o inválido
+                    if (quantity === null || quantity.trim() === "" || isNaN(quantity) || parseInt(quantity) <= 0) {
+                        alert("Operación cancelada o cantidad inválida. Debe ser un número entero positivo.");
+                        return;
+                    }
+                    
+                    const finalQuantity = parseInt(quantity);
+
+                    // 2. Crear un formulario oculto para enviar POST a la ruta /restock
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    // Usar la ruta de Python /restock/<product_id>
+                    form.action = `{{ url_for('pharmacist.restock_item', product_id=0) }}`.replace('0', itemId);
+                    
+                    // Añadir el campo de cantidad
+                    const quantityInput = document.createElement('input');
+                    quantityInput.type = 'hidden';
+                    quantityInput.name = 'quantity';
+                    quantityInput.value = finalQuantity; 
+
+                    form.appendChild(quantityInput);
+                    document.body.appendChild(form);
+                    
+                    // 3. Enviar el formulario
+                    form.submit();
                 });
             });
         });

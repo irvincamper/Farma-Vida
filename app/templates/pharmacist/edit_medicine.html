@@ -1,0 +1,50 @@
+{% extends 'layout/base.html' %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block content %}
+    <header class="header">
+        <h1><i class="fas fa-edit"></i> {{ page_title }}</h1>
+        <p>Actualizar la información y el stock del producto: **{{ item.nombre }}** (ID: {{ item.id }})</p>
+    </header>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            
+            <form method="POST" action="{{ url_for('pharmacist.edit_medicine_item', med_id=item.id) }}">
+                
+                {# CSRF Token (Si lo usas en Flask, descomenta y ajusta) #}
+                {# {{ csrf_token() }} #}
+
+                <div class="row g-3">
+                    
+                    <div class="col-md-6">
+                        <label for="name" class="form-label">Nombre del Producto</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ item.nombre }}" required>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="stock" class="form-label">Stock Actual</label>
+                        <input type="number" class="form-control" id="stock" name="stock" value="{{ item.stock }}" min="0" required>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label for="category_id" class="form-label">Categoría</label>
+                        <select class="form-select" id="category_id" name="category_id" required>
+                            <option value="">Seleccione Categoría</option>
+                            {% for category in categories %}
+                                <option value="{{ category.id }}" {% if category.id == item.categoria_id %}selected{% endif %}>
+                                    {{ category.nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-12 mt-4">
+                        <button type="submit" class="btn btn-success me-2"><i class="fas fa-save"></i> Guardar Cambios</button>
+                        <a href="{{ url_for('pharmacist.inventory') }}" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </div>
+            </form>
+            
+        </div>
+    </div>
+{% endblock %}
