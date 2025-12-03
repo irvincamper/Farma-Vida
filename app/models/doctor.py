@@ -1,6 +1,6 @@
 from ..extensions import supabase
 import random
-import string
+import string 
 
 class Doctor:
     def __init__(self):
